@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-tooling"
+version = "0.1.0"
+description = "The Tooling Layer - Transform agent decisions into actions via unified tool abstractions"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Ignacio Martinez", email = "ignacio.martinez@oracle.com"}
+]
+keywords = [
+    "ai", "agents", "tooling", "mcp", "model-context-protocol",
+    "function-calling", "llm", "langchain", "oracle"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+    "rich>=13.0.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "typer>=0.9.0",
+    "inquirer>=3.1.0",
+]
+
+[project.optional-dependencies]
+mcp = [
+    "mcp>=0.1.0",
+]
+server = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+all = [
+    "agent-tooling[mcp,server,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/jasperan/agent-tooling"
+Documentation = "https://github.com/jasperan/agent-tooling#readme"
+Repository = "https://github.com/jasperan/agent-tooling"
+Issues = "https://github.com/jasperan/agent-tooling/issues"
+
+[project.scripts]
+agent-tooling = "agent_tooling.cli:main"
+agent-tooling-server = "agent_tooling.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+agent_tooling = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

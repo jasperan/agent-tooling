@@ -1,3 +1,46 @@
+Metadata-Version: 2.4
+Name: agent-tooling
+Version: 0.1.0
+Summary: The Tooling Layer - Transform agent decisions into actions via unified tool abstractions
+Author-email: Ignacio Martinez <ignacio.martinez@oracle.com>
+License: MIT
+Project-URL: Homepage, https://github.com/jasperan/agent-tooling
+Project-URL: Documentation, https://github.com/jasperan/agent-tooling#readme
+Project-URL: Repository, https://github.com/jasperan/agent-tooling
+Project-URL: Issues, https://github.com/jasperan/agent-tooling/issues
+Keywords: ai,agents,tooling,mcp,model-context-protocol,function-calling,llm,langchain,oracle
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: httpx>=0.25.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: fastapi>=0.100.0
+Requires-Dist: uvicorn>=0.23.0
+Requires-Dist: typer>=0.9.0
+Requires-Dist: inquirer>=3.1.0
+Provides-Extra: mcp
+Requires-Dist: mcp>=0.1.0; extra == "mcp"
+Provides-Extra: server
+Requires-Dist: fastapi>=0.100.0; extra == "server"
+Requires-Dist: uvicorn>=0.23.0; extra == "server"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Provides-Extra: all
+Requires-Dist: agent-tooling[dev,mcp,server]; extra == "all"
+Dynamic: license-file
+
 # Agent Tooling: The Tooling Layer
 
 ![License](https://img.shields.io/badge/license-MIT-green)

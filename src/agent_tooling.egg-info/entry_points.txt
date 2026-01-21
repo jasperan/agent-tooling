@@ -1,0 +1,3 @@
+[console_scripts]
+agent-tooling = agent_tooling.cli:main
+agent-tooling-server = agent_tooling.server:main
