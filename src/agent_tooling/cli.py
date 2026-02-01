@@ -29,6 +29,7 @@ from agent_tooling.interceptor import ToolingInterceptor
 from agent_tooling.visualization.arena import ToolArena
 from agent_tooling.visualization.dashboard import ToolDashboard
 from agent_tooling.visualization.traces import ToolTracer
+from agent_tooling.agents.ollama import OllamaAgent
 
 
 console = Console()
@@ -257,9 +258,22 @@ def show_schemas_command():
             ))
 
 
+def chat_command(verbose: bool = True):
+    """Start an interactive chat session with the Ollama agent."""
+    try:
+        agent = OllamaAgent(verbose=verbose)
+        agent.run_interactive()
+    except KeyboardInterrupt:
+        console.print("\n[dim]Chat session ended.[/dim]")
+    except Exception as e:
+        console.print(f"[red]Error starting chat: {e}[/red]")
+        console.print("[dim]Make sure Ollama is running and the model is available.[/dim]")
+
+
 def main_menu():
     """Display the main menu."""
     choices = [
+        ("Chat with Agent", chat_command),
         ("List Tools", list_tools_command),
         ("Run Tool", run_tool_command),
         ("Arena: Compare Tools", arena_command),
@@ -312,12 +326,14 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Agent Tooling CLI")
+    parser.add_argument("--chat", "-c", action="store_true", help="Start interactive chat with Ollama agent")
     parser.add_argument("--list", "-l", action="store_true", help="List all tools")
     parser.add_argument("--run", "-r", metavar="TOOL", help="Run a specific tool")
     parser.add_argument("--arena", "-a", action="store_true", help="Start arena mode")
     parser.add_argument("--dashboard", "-d", action="store_true", help="Start dashboard")
     parser.add_argument("--mcp", "-m", action="store_true", help="Start MCP server")
     parser.add_argument("--schemas", "-s", action="store_true", help="Show tool schemas")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output (show tool calls/results)")
 
     args = parser.parse_args()
 
@@ -327,7 +343,9 @@ def main():
     except ImportError:
         pass
 
-    if args.list:
+    if args.chat:
+        chat_command(verbose=args.verbose or True)
+    elif args.list:
         print_banner()
         list_tools_command()
     elif args.run:
