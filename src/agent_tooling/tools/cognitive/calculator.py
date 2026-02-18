@@ -12,6 +12,27 @@ from agent_tooling.tools.decorator import tool
 from agent_tooling.tools.base import ToolError
 
 
+SAMPLES = {
+    "calculate": [
+        {
+            "name": "basic_arithmetic",
+            "description": "Simple addition",
+            "input": {"expression": "2 + 2"},
+        },
+        {
+            "name": "scientific",
+            "description": "Square root and power",
+            "input": {"expression": "sqrt(144) + pow(2, 3)"},
+        },
+        {
+            "name": "trigonometry",
+            "description": "Sine of pi/2",
+            "input": {"expression": "sin(pi / 2)"},
+        },
+    ],
+}
+
+
 # Safe math functions to expose
 SAFE_FUNCTIONS = {
     "abs": abs,

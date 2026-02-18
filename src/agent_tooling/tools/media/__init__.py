@@ -1,17 +1,17 @@
 """
-Media Tools - Image analysis, PDF reading, audio transcription.
+Media Tools - Image analysis, PDF processing, audio transcription.
 
 Tools for processing media files:
-- Image analysis and description
-- PDF text extraction
-- Audio transcription
-
-Note: Some tools may require additional dependencies (Pillow, PyPDF2, etc.)
+- analyze_image: Analyze images using Ollama vision models (llava)
+- pdf_to_markdown: Convert PDF files to markdown text
+- summarize_pdf: Summarize PDF content using an Ollama LLM
 """
 
-# Placeholder imports - implement as needed
-# from agent_tooling.tools.media.image import analyze_image
-# from agent_tooling.tools.media.pdf import read_pdf
-# from agent_tooling.tools.media.audio import transcribe_audio
+from agent_tooling.tools.media.image import analyze_image
+from agent_tooling.tools.media.pdf import pdf_to_markdown, summarize_pdf
 
-__all__ = []
+__all__ = [
+    "analyze_image",
+    "pdf_to_markdown",
+    "summarize_pdf",
+]

@@ -14,6 +14,29 @@ import traceback
 from agent_tooling.tools.decorator import tool
 from agent_tooling.tools.base import ToolError
 
+SAMPLES = {
+    "execute_python": [
+        {
+            "name": "sum_range",
+            "description": "Compute sum of 1 to 100",
+            "input": {"code": "result = sum(range(1, 101))"},
+        },
+        {
+            "name": "list_comprehension",
+            "description": "Generate squares with a list comprehension",
+            "input": {"code": "result = [x**2 for x in range(10)]"},
+        },
+    ],
+    "execute_shell": [
+        {
+            "name": "echo_hello",
+            "description": "Echo a message",
+            "input": {"command": "echo 'Hello from agent-tooling'"},
+            "requires": "destructive",
+        },
+    ],
+}
+
 
 @tool(name="execute_python", category="developer", mcp_enabled=True)
 def execute_python(code: str, timeout: int = 30) -> dict:

@@ -12,6 +12,92 @@ from datetime import datetime
 from agent_tooling.tools.decorator import tool
 from agent_tooling.tools.base import ToolResult, ToolError
 
+SAMPLES = {
+    "read_file": [
+        {
+            "name": "read_self",
+            "description": "Read this tool's own source file",
+            "input": {"path": __file__},
+        },
+    ],
+    "list_directory": [
+        {
+            "name": "list_cwd",
+            "description": "List files in the current directory",
+            "input": {"path": ".", "pattern": "*.py"},
+        },
+    ],
+    "file_exists": [
+        {
+            "name": "check_readme",
+            "description": "Check if README.md exists",
+            "input": {"path": "README.md"},
+        },
+    ],
+    "write_file": [
+        {
+            "name": "write_temp",
+            "description": "Write a temporary file",
+            "input": {"path": "/tmp/agent_tooling_demo.txt", "content": "Hello from agent-tooling!"},
+            "requires": "destructive",
+        },
+    ],
+    "edit_file": [
+        {
+            "name": "edit_example",
+            "description": "Example text replacement",
+            "input": {"path": "/tmp/agent_tooling_demo.txt", "edits": [{"old_text": "Hello", "new_text": "Hi"}]},
+            "requires": "destructive",
+        },
+    ],
+    "search_files": [
+        {
+            "name": "search_imports",
+            "description": "Search for import statements in current directory",
+            "input": {"pattern": "from agent_tooling", "path": ".", "include_glob": "*.py", "max_results": 5},
+        },
+    ],
+    "create_directory": [
+        {
+            "name": "create_temp_dir",
+            "description": "Create a temporary directory",
+            "input": {"path": "/tmp/agent_tooling_demo_dir"},
+            "requires": "destructive",
+        },
+    ],
+    "delete_path": [
+        {
+            "name": "delete_temp",
+            "description": "Delete a temporary file",
+            "input": {"path": "/tmp/agent_tooling_demo.txt"},
+            "requires": "destructive",
+        },
+    ],
+    "move_path": [
+        {
+            "name": "move_example",
+            "description": "Move/rename a file",
+            "input": {"source": "/tmp/agent_tooling_demo.txt", "destination": "/tmp/agent_tooling_demo_moved.txt"},
+            "requires": "destructive",
+        },
+    ],
+    "copy_path": [
+        {
+            "name": "copy_example",
+            "description": "Copy a file",
+            "input": {"source": "/tmp/agent_tooling_demo.txt", "destination": "/tmp/agent_tooling_demo_copy.txt"},
+            "requires": "destructive",
+        },
+    ],
+    "get_file_info": [
+        {
+            "name": "info_self",
+            "description": "Get info about this tool's source file",
+            "input": {"path": __file__},
+        },
+    ],
+}
+
 
 @tool(name="read_file", category="developer", mcp_enabled=True)
 def read_file(path: str, encoding: str = "utf-8") -> str:

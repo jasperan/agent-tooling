@@ -147,5 +147,20 @@ cython_debug/
 .DS_Store
 Thumbs.db
 
-# Claude-generated plan documents
+# Claude-generated files
+CLAUDE.md
 docs/plans/
+task_plan.md
+findings.md
+progress.md
+
+# MCP / Serena files
+.claude/
+.serena/
+.mcp.json
+.mcp*.json
+mcp.json
+
+# Agent session logs
+sessions/
+*.session.json

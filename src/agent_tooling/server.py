@@ -215,7 +215,7 @@ def main(host: str = "0.0.0.0", port: int = 8082):
     """Run the server."""
     # Load built-in tools
     try:
-        from agent_tooling.tools import developer, data, cognitive
+        from agent_tooling.tools import developer, data, cognitive, media
     except ImportError:
         pass
 

@@ -291,6 +291,15 @@ def tool(
         if auto_register:
             ToolRegistry.register(func_tool)
 
+            # Scan module for SAMPLES dict and register any matching samples
+            module = inspect.getmodule(func)
+            if module is not None:
+                module_samples = getattr(module, "SAMPLES", None)
+                if isinstance(module_samples, dict):
+                    tool_name = func_tool.name
+                    if tool_name in module_samples:
+                        ToolRegistry.register_samples(tool_name, module_samples[tool_name])
+
         return wrapper
 
     return decorator

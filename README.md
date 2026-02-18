@@ -369,6 +369,117 @@ def my_custom_tool(param1: str, param2: int = 0) -> dict:
 
 ---
 
+## 🧪 Appendix C: Tool Samples (Demo Mode)
+
+Run `agent-tooling --demo` to execute all safe samples interactively. Use flags to include more:
+
+```bash
+agent-tooling --demo                  # Safe tools only
+agent-tooling --demo --demo-network   # Include network-dependent tools
+agent-tooling --demo --demo-ollama    # Include Ollama-dependent tools
+agent-tooling --demo --demo-all       # Run everything
+agent-tooling --demo-json             # Output results as JSON
+```
+
+Below are sample inputs and outputs for each tool category.
+
+### Cognitive Tools
+
+#### `calculate` — Evaluate mathematical expressions
+
+| Sample | Input | Output |
+|--------|-------|--------|
+| Basic arithmetic | `{"expression": "2 + 2"}` | `{"result": 4, "type": "int"}` |
+| Scientific | `{"expression": "sqrt(144) + pow(2, 3)"}` | `{"result": 20.0, "type": "float"}` |
+| Trigonometry | `{"expression": "sin(pi / 2)"}` | `{"result": 1.0, "type": "float"}` |
+
+#### `web_search` — Search the web (requires network)
+
+| Sample | Input |
+|--------|-------|
+| Tech search | `{"query": "Python MCP protocol", "num_results": 3}` |
+
+#### `wikipedia_search` — Wikipedia lookup (requires network)
+
+| Sample | Input |
+|--------|-------|
+| Science lookup | `{"query": "Large language model", "sentences": 3}` |
+
+### Data Tools
+
+#### `query_database` — Execute SQL queries
+
+| Sample | Input | Output |
+|--------|-------|--------|
+| Mock SELECT | `{"sql": "SELECT * FROM users LIMIT 5"}` | `{"rows": [{"id": 1, "name": "Example Row 1"}, {"id": 2, "name": "Example Row 2"}], "row_count": 2}` |
+
+#### `call_api` — HTTP API requests (requires network)
+
+| Sample | Input |
+|--------|-------|
+| Get IP | `{"url": "https://httpbin.org/ip", "method": "GET"}` |
+
+#### `fetch_json` — Fetch JSON data (requires network)
+
+| Sample | Input |
+|--------|-------|
+| Fetch UUID | `{"url": "https://httpbin.org/uuid"}` |
+
+### Developer Tools
+
+#### `read_file` — Read file contents
+
+| Sample | Input | Output (truncated) |
+|--------|-------|--------|
+| Read self | `{"path": "src/agent_tooling/tools/developer/filesystem.py"}` | `"""File System Tools - Read, write, and navigate...` |
+
+#### `file_exists` — Check if a path exists
+
+| Sample | Input | Output |
+|--------|-------|--------|
+| Check README | `{"path": "README.md"}` | `{"exists": true, "is_file": true, "is_dir": false}` |
+
+#### `execute_python` — Execute Python code
+
+| Sample | Input | Output |
+|--------|-------|--------|
+| Sum range | `{"code": "result = sum(range(1, 101))"}` | `{"return_value": 5050}` |
+| List comprehension | `{"code": "result = [x**2 for x in range(10)]"}` | `{"return_value": [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]}` |
+
+#### `get_file_info` — File metadata
+
+| Sample | Input | Output (key fields) |
+|--------|-------|--------|
+| Info self | `{"path": "src/.../filesystem.py"}` | `{"name": "filesystem.py", "is_file": true, "size_bytes": 18721, "extension": ".py"}` |
+
+#### `search_files` — Search for patterns in files
+
+| Sample | Input | Output |
+|--------|-------|--------|
+| Search imports | `{"pattern": "from agent_tooling", "include_glob": "*.py", "max_results": 5}` | `[{"file": "tests/test_tools.py", "line": 4, "content": "from agent_tooling import ..."}]` |
+
+### Media Tools
+
+#### `analyze_image` — Vision analysis via Ollama llava (requires Ollama)
+
+| Sample | Input |
+|--------|-------|
+| Describe URL | `{"source": "https://example.com/photo.png"}` |
+
+#### `pdf_to_markdown` — Convert PDF to markdown
+
+| Sample | Input | Output |
+|--------|-------|--------|
+| Convert sample | `{"path": "sample.pdf"}` | `"# Agent Tooling - Sample Document\n\n## Introduction\n\nThis is a sample PDF..."` |
+
+#### `summarize_pdf` — Summarize PDF via Ollama (requires Ollama)
+
+| Sample | Input |
+|--------|-------|
+| Summarize sample | `{"path": "sample.pdf", "max_pages": 1}` |
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.

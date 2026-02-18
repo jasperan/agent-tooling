@@ -10,6 +10,17 @@ from agent_tooling.tools.decorator import tool
 from agent_tooling.tools.base import ToolError
 
 
+SAMPLES = {
+    "query_database": [
+        {
+            "name": "mock_select",
+            "description": "Run a mock SELECT query (no DB connection needed)",
+            "input": {"sql": "SELECT * FROM users LIMIT 5"},
+        },
+    ],
+}
+
+
 # Connection registry for database connections
 _connections: Dict[str, Any] = {}
 

@@ -14,6 +14,17 @@ try:
 except ImportError:
     HAS_HTTPX = False
 
+SAMPLES = {
+    "scrape_webpage": [
+        {
+            "name": "scrape_example",
+            "description": "Scrape example.com",
+            "input": {"url": "https://example.com", "extract_links": True},
+            "requires": "network",
+        },
+    ],
+}
+
 
 def _extract_text(html: str) -> str:
     """Extract readable text from HTML."""

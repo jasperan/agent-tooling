@@ -22,6 +22,7 @@ class ToolRegistry:
 
     _tools: Dict[str, BaseTool] = {}
     _categories: Dict[str, List[str]] = {}
+    _samples: Dict[str, List[Dict[str, Any]]] = {}
 
     @classmethod
     def register(cls, tool: BaseTool) -> None:
@@ -166,10 +167,41 @@ class ToolRegistry:
         return [tool.to_mcp_tool() for tool in tool_list]
 
     @classmethod
+    def register_samples(cls, tool_name: str, samples: List[Dict[str, Any]]) -> None:
+        """
+        Register sample inputs for a tool.
+
+        Args:
+            tool_name: Name of the tool
+            samples: List of sample dicts with 'name', 'description', 'input', and
+                     optional 'requires' (e.g. 'network', 'ollama', 'destructive')
+        """
+        cls._samples[tool_name] = samples
+
+    @classmethod
+    def get_samples(cls, tool_name: str) -> List[Dict[str, Any]]:
+        """
+        Get sample inputs for a tool.
+
+        Args:
+            tool_name: Name of the tool
+
+        Returns:
+            List of sample dicts, or empty list if none registered
+        """
+        return cls._samples.get(tool_name, [])
+
+    @classmethod
+    def get_all_samples(cls) -> Dict[str, List[Dict[str, Any]]]:
+        """Get all registered samples keyed by tool name."""
+        return cls._samples.copy()
+
+    @classmethod
     def clear(cls) -> None:
         """Clear all registered tools."""
         cls._tools.clear()
         cls._categories.clear()
+        cls._samples.clear()
 
     @classmethod
     def count(cls) -> int:

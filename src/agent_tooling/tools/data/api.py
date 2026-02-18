@@ -14,6 +14,25 @@ try:
 except ImportError:
     HAS_HTTPX = False
 
+SAMPLES = {
+    "call_api": [
+        {
+            "name": "get_ip",
+            "description": "Fetch public IP information",
+            "input": {"url": "https://httpbin.org/ip", "method": "GET"},
+            "requires": "network",
+        },
+    ],
+    "fetch_json": [
+        {
+            "name": "fetch_uuid",
+            "description": "Fetch a random UUID from httpbin",
+            "input": {"url": "https://httpbin.org/uuid"},
+            "requires": "network",
+        },
+    ],
+}
+
 
 @tool(name="call_api", category="data", mcp_enabled=True)
 def call_api(

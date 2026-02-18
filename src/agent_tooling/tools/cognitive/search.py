@@ -15,6 +15,25 @@ try:
 except ImportError:
     HAS_HTTPX = False
 
+SAMPLES = {
+    "web_search": [
+        {
+            "name": "tech_search",
+            "description": "Search for a technology topic",
+            "input": {"query": "Python MCP protocol", "num_results": 3},
+            "requires": "network",
+        },
+    ],
+    "wikipedia_search": [
+        {
+            "name": "science_lookup",
+            "description": "Look up a scientific topic",
+            "input": {"query": "Large language model", "sentences": 3},
+            "requires": "network",
+        },
+    ],
+}
+
 
 @tool(name="web_search", category="cognitive", mcp_enabled=True)
 def web_search(query: str, num_results: int = 5) -> List[dict]:

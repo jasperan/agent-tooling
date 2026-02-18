@@ -49,6 +49,9 @@ server = [
 ollama = [
     "anthropic>=0.40.0",
 ]
+media = [
+    "pymupdf>=1.24.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
@@ -56,7 +59,7 @@ dev = [
     "ruff>=0.1.0",
 ]
 all = [
-    "agent-tooling[mcp,server,ollama,dev]",
+    "agent-tooling[mcp,server,ollama,media,dev]",
 ]
 
 [project.urls]
