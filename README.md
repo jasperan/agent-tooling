@@ -1,8 +1,9 @@
 # Agent Tooling: The Tooling Layer
 
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![PyPI](https://img.shields.io/pypi/v/agent-tooling)
+[![PyPI](https://img.shields.io/pypi/v/agent-tooling)](https://pypi.org/project/agent-tooling/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/agent-tooling)](https://pypi.org/project/agent-tooling/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
 <!-- ![GIF demo](https://raw.githubusercontent.com/jasperan/agent-tooling/main/gif/arena_mode.gif) -->
