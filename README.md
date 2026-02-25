@@ -1,7 +1,7 @@
 # Agent Tooling: The Tooling Layer
 
-[![PyPI](https://img.shields.io/pypi/v/agent-tooling)](https://pypi.org/project/agent-tooling/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/agent-tooling)](https://pypi.org/project/agent-tooling/)
+[![PyPI](https://img.shields.io/pypi/v/agent-tooling-layer)](https://pypi.org/project/agent-tooling-layer/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/agent-tooling-layer)](https://pypi.org/project/agent-tooling-layer/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
@@ -28,16 +28,16 @@ This repository implements the concepts from the [Agent Stack Whitepaper](https:
 ### From PyPI (Recommended)
 
 ```bash
-pip install agent-tooling
+pip install agent-tooling-layer
 
 # With MCP server support:
-pip install "agent-tooling[mcp]"
+pip install "agent-tooling-layer[mcp]"
 
 # With HTTP server support:
-pip install "agent-tooling[server]"
+pip install "agent-tooling-layer[server]"
 
 # Everything:
-pip install "agent-tooling[all]"
+pip install "agent-tooling-layer[all]"
 ```
 
 ### From Source

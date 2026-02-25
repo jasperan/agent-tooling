@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-tooling"
+name = "agent-tooling-layer"
 version = "0.1.0"
 description = "The Tooling Layer - Transform agent decisions into actions via unified tool abstractions"
 readme = "README.md"
@@ -59,7 +59,7 @@ dev = [
     "ruff>=0.1.0",
 ]
 all = [
-    "agent-tooling[mcp,server,ollama,media,dev]",
+    "agent-tooling-layer[mcp,server,ollama,media,dev]",
 ]
 
 [project.urls]
