@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge)](https://www.python.org/)
 ![Status](https://img.shields.io/badge/status-experimental-orange?style=for-the-badge)
+![Ollama](https://img.shields.io/badge/backend-Ollama-black?style=for-the-badge)
 
 <!-- ![GIF demo](https://raw.githubusercontent.com/jasperan/agent-tooling/main/gif/arena_mode.gif) -->
 
