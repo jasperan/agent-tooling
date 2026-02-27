@@ -1,10 +1,10 @@
 # Agent Tooling: The Tooling Layer
 
-[![PyPI](https://img.shields.io/pypi/v/agent-tooling-layer)](https://pypi.org/project/agent-tooling-layer/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/agent-tooling-layer)](https://pypi.org/project/agent-tooling-layer/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-![Status](https://img.shields.io/badge/status-experimental-orange)
+[![PyPI](https://img.shields.io/pypi/v/agent-tooling-layer?style=for-the-badge)](https://pypi.org/project/agent-tooling-layer/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/agent-tooling-layer?style=for-the-badge)](https://pypi.org/project/agent-tooling-layer/)
+[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge)](https://www.python.org/)
+![Status](https://img.shields.io/badge/status-experimental-orange?style=for-the-badge)
 
 <!-- ![GIF demo](https://raw.githubusercontent.com/jasperan/agent-tooling/main/gif/arena_mode.gif) -->
 
@@ -56,7 +56,7 @@ Interactive Jupyter notebooks demonstrating tool capabilities:
 
 | Name | Description | Link |
 | ---- | ----------- | ---- |
-| agent_tooling_demo | Comprehensive demo of all tool categories with arena mode | [![Open Notebook](https://img.shields.io/badge/Open%20Notebook-orange?style=flat-square)](notebooks/agent_tooling_demo.ipynb) |
+| agent_tooling_demo | Comprehensive demo of all tool categories with arena mode | [![Open Notebook](https://img.shields.io/badge/Open%20Notebook-orange?style=for-the-badge)](notebooks/agent_tooling_demo.ipynb) |
 
 ---
 
@@ -492,3 +492,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 - [agent-reasoning](https://github.com/jasperan/agent-reasoning) - The Reasoning Layer
 - [agent-application](https://github.com/jasperan/agent-application) - The Application Layer (coming soon)
 - [agent-infrastructure](https://github.com/jasperan/agent-infrastructure) - The Infrastructure Layer (coming soon)
+
+---
+
+<div align="center">
+
+[![GitHub](https://img.shields.io/badge/GitHub-jasperan-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/jasperan)&nbsp;
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-jasperan-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jasperan/)
+
+</div>
