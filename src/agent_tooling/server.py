@@ -34,6 +34,17 @@ class ToolCallResponse(BaseModel):
     tool_name: str
     execution_time_ms: float
 
+    @classmethod
+    def from_result(cls, result) -> "ToolCallResponse":
+        """Create a response from a ToolResult."""
+        return cls(
+            success=result.success,
+            data=result.data,
+            error=result.error,
+            tool_name=result.tool_name,
+            execution_time_ms=result.execution_time_ms,
+        )
+
 
 class FunctionCallRequest(BaseModel):
     """OpenAI-style function call request."""
@@ -128,28 +139,14 @@ async def get_tool_schema(tool_name: str, format: str = "openai"):
 async def execute_tool(tool_name: str, request: ToolCallRequest):
     """Execute a specific tool."""
     result = interceptor.execute(tool_name, request.parameters)
-
-    return ToolCallResponse(
-        success=result.success,
-        data=result.data,
-        error=result.error,
-        tool_name=result.tool_name,
-        execution_time_ms=result.execution_time_ms,
-    )
+    return ToolCallResponse.from_result(result)
 
 
 @app.post("/execute", response_model=ToolCallResponse)
 async def execute(request: ToolCallRequest):
     """Execute a tool by name."""
     result = interceptor.execute(request.name, request.parameters)
-
-    return ToolCallResponse(
-        success=result.success,
-        data=result.data,
-        error=result.error,
-        tool_name=result.tool_name,
-        execution_time_ms=result.execution_time_ms,
-    )
+    return ToolCallResponse.from_result(result)
 
 
 @app.post("/function_call", response_model=ToolCallResponse)
@@ -164,14 +161,7 @@ async def function_call(request: FunctionCallRequest):
         "name": request.name,
         "arguments": arguments,
     })
-
-    return ToolCallResponse(
-        success=result.success,
-        data=result.data,
-        error=result.error,
-        tool_name=result.tool_name,
-        execution_time_ms=result.execution_time_ms,
-    )
+    return ToolCallResponse.from_result(result)
 
 
 @app.get("/schemas/openai")

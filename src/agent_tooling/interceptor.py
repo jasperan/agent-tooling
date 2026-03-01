@@ -76,9 +76,11 @@ class ToolingInterceptor:
                 tool_name=tool_name,
             )
 
-        # Execute
+        # Execute (save/restore verbose to avoid mutating shared tool state)
+        original_verbose = tool.verbose
         tool.verbose = self.verbose
         result = tool.run(**params)
+        tool.verbose = original_verbose
 
         # Record trace
         self._trace.append({

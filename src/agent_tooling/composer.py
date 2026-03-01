@@ -317,20 +317,14 @@ class ToolComposer:
     """
 
     @staticmethod
-    def sequential(
+    def _create(
         name: str,
         description: str,
         tools: List[Union[str, ToolStep]],
+        mode: CompositionMode,
         **kwargs,
     ) -> CompositeTool:
-        """
-        Create a sequential composite tool.
-
-        Args:
-            name: Name for the composite tool
-            description: Description of what it does
-            tools: List of tool names or ToolStep objects
-        """
+        """Create a composite tool with the given mode."""
         steps = [
             ToolStep(tool_name=t) if isinstance(t, str) else t
             for t in tools
@@ -339,9 +333,19 @@ class ToolComposer:
             name=name,
             description=description,
             steps=steps,
-            mode=CompositionMode.SEQUENTIAL,
+            mode=mode,
             **kwargs,
         )
+
+    @staticmethod
+    def sequential(
+        name: str,
+        description: str,
+        tools: List[Union[str, ToolStep]],
+        **kwargs,
+    ) -> CompositeTool:
+        """Create a sequential composite tool."""
+        return ToolComposer._create(name, description, tools, CompositionMode.SEQUENTIAL, **kwargs)
 
     @staticmethod
     def parallel(
@@ -351,17 +355,7 @@ class ToolComposer:
         **kwargs,
     ) -> CompositeTool:
         """Create a parallel composite tool."""
-        steps = [
-            ToolStep(tool_name=t) if isinstance(t, str) else t
-            for t in tools
-        ]
-        return CompositeTool(
-            name=name,
-            description=description,
-            steps=steps,
-            mode=CompositionMode.PARALLEL,
-            **kwargs,
-        )
+        return ToolComposer._create(name, description, tools, CompositionMode.PARALLEL, **kwargs)
 
     @staticmethod
     def pipeline(
@@ -371,17 +365,7 @@ class ToolComposer:
         **kwargs,
     ) -> CompositeTool:
         """Create a pipeline composite tool."""
-        steps = [
-            ToolStep(tool_name=t) if isinstance(t, str) else t
-            for t in tools
-        ]
-        return CompositeTool(
-            name=name,
-            description=description,
-            steps=steps,
-            mode=CompositionMode.PIPELINE,
-            **kwargs,
-        )
+        return ToolComposer._create(name, description, tools, CompositionMode.PIPELINE, **kwargs)
 
     @staticmethod
     def register_composite(tool: CompositeTool) -> CompositeTool:

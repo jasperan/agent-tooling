@@ -5,7 +5,9 @@ Note: These tools execute arbitrary code and should be used with caution.
 Consider sandboxing in production environments.
 """
 
+import contextlib
 import subprocess
+import signal
 import sys
 from typing import Optional
 from io import StringIO
@@ -49,11 +51,8 @@ def execute_python(code: str, timeout: int = 30) -> dict:
     Returns:
         Dictionary with stdout, stderr, and return value
     """
-    # Capture stdout and stderr
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = StringIO()
-    sys.stderr = StringIO()
+    stdout_buf = StringIO()
+    stderr_buf = StringIO()
 
     result = {
         "success": False,
@@ -63,28 +62,40 @@ def execute_python(code: str, timeout: int = 30) -> dict:
         "error": None,
     }
 
+    def _timeout_handler(signum, frame):
+        raise TimeoutError(f"Code execution timed out after {timeout} seconds")
+
     try:
-        # Create a namespace for execution
-        namespace = {"__builtins__": __builtins__}
+        # Set timeout via signal (Unix only; ignored on Windows)
+        old_handler = None
+        if hasattr(signal, "SIGALRM"):
+            old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(timeout)
 
-        # Execute the code
-        exec(code, namespace)
+        # Capture stdout/stderr with context managers (safer than replacing globals)
+        with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(stderr_buf):
+            namespace = {"__builtins__": __builtins__}
+            exec(code, namespace)
 
-        # Check for a 'result' variable
         if "result" in namespace:
             result["return_value"] = namespace["result"]
 
         result["success"] = True
 
+    except TimeoutError as e:
+        result["error"] = str(e)
     except Exception as e:
         result["error"] = str(e)
         result["traceback"] = traceback.format_exc()
 
     finally:
-        result["stdout"] = sys.stdout.getvalue()
-        result["stderr"] = sys.stderr.getvalue()
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        # Cancel alarm and restore handler
+        if hasattr(signal, "SIGALRM"):
+            signal.alarm(0)
+            if old_handler is not None:
+                signal.signal(signal.SIGALRM, old_handler)
+        result["stdout"] = stdout_buf.getvalue()
+        result["stderr"] = stderr_buf.getvalue()
 
     return result
 

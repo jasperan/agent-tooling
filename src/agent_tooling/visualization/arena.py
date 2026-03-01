@@ -12,7 +12,6 @@ from rich.panel import Panel
 from rich.columns import Columns
 from rich.live import Live
 from rich.layout import Layout
-import time
 
 from agent_tooling.tools.registry import ToolRegistry
 from agent_tooling.tools.base import ToolResult
@@ -80,11 +79,7 @@ class ToolArena:
                 if self.verbose:
                     console.print(f"[cyan]Running {tool_name}...[/cyan]")
 
-                start_time = time.time()
                 result = tool.run(**kwargs)
-                end_time = time.time()
-
-                result.execution_time_ms = (end_time - start_time) * 1000
 
             results.append(result)
             self.results.append({

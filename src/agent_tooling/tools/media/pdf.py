@@ -42,6 +42,7 @@ except ImportError:
     HAS_HTTPX = False
 
 DEFAULT_OLLAMA_MODEL = "qwen3-coder"
+# Canonical Ollama base URL — also defined in agents/ollama.py and media/image.py
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
 
 

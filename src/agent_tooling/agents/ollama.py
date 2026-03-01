@@ -76,6 +76,7 @@ class OllamaAgent:
             self.tools = tools
 
         self._tools_by_name = {tool.name: tool for tool in self.tools}
+        self._tools_schema: Optional[List[Dict[str, Any]]] = None
 
         # Set up system prompt
         if system_prompt is None:
@@ -100,16 +101,17 @@ class OllamaAgent:
         )
 
     def _get_tools_schema(self) -> List[Dict[str, Any]]:
-        """Get Anthropic-format tool schemas for all tools."""
-        tools_schema = []
-        for tool in self.tools:
-            schema = tool.definition.to_json_schema()
-            tools_schema.append({
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": schema,
-            })
-        return tools_schema
+        """Get Anthropic-format tool schemas for all tools (cached)."""
+        if self._tools_schema is None:
+            self._tools_schema = [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.definition.to_json_schema(),
+                }
+                for tool in self.tools
+            ]
+        return self._tools_schema
 
     def _execute_tool(self, tool_name: str, tool_input: Dict[str, Any]) -> ToolResult:
         """Execute a tool and return the result."""

@@ -13,8 +13,8 @@ from typing import Any, Dict, Optional, Type, List, Callable
 from pydantic import BaseModel, Field
 from rich.console import Console
 from rich.panel import Panel
-from datetime import datetime
 import json
+import time
 import traceback
 
 
@@ -187,7 +187,6 @@ class BaseTool(ABC):
             ToolError: If validation fails
         """
         validated = {}
-        params_by_name = {p.name: p for p in self.get_parameters()}
 
         for param in self.get_parameters():
             if param.name in kwargs:
@@ -209,7 +208,7 @@ class BaseTool(ABC):
 
         This is the main entry point for tool execution.
         """
-        start_time = datetime.now()
+        start_time = time.perf_counter()
 
         try:
             # Validate inputs
@@ -224,8 +223,7 @@ class BaseTool(ABC):
             result.tool_name = self.name
 
             # Calculate execution time
-            end_time = datetime.now()
-            result.execution_time_ms = (end_time - start_time).total_seconds() * 1000
+            result.execution_time_ms = (time.perf_counter() - start_time) * 1000
 
             # Log result
             if self.verbose:

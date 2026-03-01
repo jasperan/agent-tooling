@@ -209,8 +209,8 @@ class ToolRegistry:
         return len(cls._tools)
 
 
-# Convenience alias
-TOOL_MAP = ToolRegistry._tools
+# Convenience alias - use ToolRegistry.get_all() for a safe copy
+TOOL_MAP = ToolRegistry._tools  # Note: direct reference for backward compat; prefer ToolRegistry.get()
 
 
 def get_tool(name: str) -> Optional[BaseTool]:

@@ -36,6 +36,25 @@ from agent_tooling.agents.ollama import OllamaAgent
 console = Console()
 
 
+def _select_from_list(choices: list, message: str = "Select an option") -> Optional[str]:
+    """Present a selection list using inquirer (or fallback to numbered input)."""
+    if HAS_INQUIRER:
+        questions = [inquirer.List("selection", message=message, choices=choices)]
+        answers = inquirer.prompt(questions)
+        if not answers:
+            return None
+        return answers["selection"]
+    else:
+        for i, name in enumerate(choices, 1):
+            console.print(f"  {i}. {name}")
+        choice = Prompt.ask("Enter number", default="1")
+        try:
+            return choices[int(choice) - 1]
+        except (ValueError, IndexError):
+            console.print("[red]Invalid selection[/red]")
+            return None
+
+
 def print_banner():
     """Print the CLI banner."""
     banner = """
@@ -90,29 +109,9 @@ def run_tool_command():
 
     # Select tool
     tool_names = [t["name"] for t in tools]
-
-    if HAS_INQUIRER:
-        questions = [
-            inquirer.List(
-                "tool",
-                message="Select a tool to run",
-                choices=tool_names,
-            )
-        ]
-        answers = inquirer.prompt(questions)
-        if not answers:
-            return
-        tool_name = answers["tool"]
-    else:
-        console.print("Available tools:")
-        for i, name in enumerate(tool_names, 1):
-            console.print(f"  {i}. {name}")
-        choice = Prompt.ask("Enter tool number", default="1")
-        try:
-            tool_name = tool_names[int(choice) - 1]
-        except (ValueError, IndexError):
-            console.print("[red]Invalid selection[/red]")
-            return
+    tool_name = _select_from_list(tool_names, "Select a tool to run")
+    if tool_name is None:
+        return
 
     tool = ToolRegistry.get(tool_name)
     if not tool:
@@ -476,39 +475,17 @@ def main_menu():
     ]
 
     while True:
-        if HAS_INQUIRER:
-            questions = [
-                inquirer.List(
-                    "action",
-                    message="Select an action",
-                    choices=[c[0] for c in choices],
-                )
-            ]
-            answers = inquirer.prompt(questions)
-            if not answers:
-                break
+        labels = [c[0] for c in choices]
+        selected = _select_from_list(labels, "Select an action")
+        if selected is None:
+            break
 
-            for label, func in choices:
-                if label == answers["action"]:
-                    if func is None:
-                        return
-                    func()
-                    break
-        else:
-            console.print("\n[bold]Main Menu:[/bold]")
-            for i, (label, _) in enumerate(choices, 1):
-                console.print(f"  {i}. {label}")
-
-            choice = Prompt.ask("Select", default="1")
-            try:
-                idx = int(choice) - 1
-                if idx == len(choices) - 1:  # Exit
+        for label, func in choices:
+            if label == selected:
+                if func is None:
                     return
-                _, func = choices[idx]
-                if func:
-                    func()
-            except (ValueError, IndexError):
-                console.print("[red]Invalid selection[/red]")
+                func()
+                break
 
         console.print()
 
@@ -542,7 +519,7 @@ def main():
         pass
 
     if args.chat:
-        chat_command(verbose=args.verbose or True)
+        chat_command(verbose=args.verbose)
     elif args.demo or args.demo_json:
         print_banner()
         use_all = args.demo_all
