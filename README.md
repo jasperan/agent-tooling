@@ -5,143 +5,222 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge)](https://www.python.org/)
 ![Status](https://img.shields.io/badge/status-experimental-orange?style=for-the-badge)
+
+[![OpenHands](https://img.shields.io/badge/powered_by-OpenHands-purple?style=for-the-badge)](https://github.com/OpenHands/OpenHands)
+[![Pi-dev](https://img.shields.io/badge/bridge-Pi--dev-ff6b35?style=for-the-badge)](https://buildwithpi.ai/)
 ![Ollama](https://img.shields.io/badge/backend-Ollama-black?style=for-the-badge)
 
-<!-- ![GIF demo](https://raw.githubusercontent.com/jasperan/agent-tooling/main/gif/arena_mode.gif) -->
+Transform agent decisions into actions. Unified tool abstractions with **multi-provider LLM support** via [OpenHands](https://github.com/OpenHands/OpenHands), **sandboxed Docker execution**, and **bidirectional interop** with [pi-dev](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) coding agent.
 
-## Vision & Purpose
-
-The **Tooling Layer** is the action engine of the AI Agent Stack. It translates agent decisions into real-world effects by providing a unified interface for tools that interact with databases, APIs, file systems, and external services.
-
-This repository implements the concepts from the [Agent Stack Whitepaper](https://github.com/jasperan/agent-stack-whitepaper), specifically the Tooling section which covers:
-
-- **Tool Definitions**: Name, description, input/output schemas
-- **Function Calling**: Structured JSON tool invocations
-- **Tool Composition**: Building complex tools from atomic ones
-- **MCP Integration**: Model Context Protocol for tool sharing
-
-> **"From decisions to actions - unified tool abstractions for AI agents."**
+> **"Any LLM provider. Any execution environment. Any agent harness."**
 
 ---
 
-## 📦 Installation
+## Why Agent Tooling?
 
-### From PyPI (Recommended)
+Most tool-calling frameworks lock you into one LLM provider and run everything on the host. Agent Tooling breaks both constraints:
+
+| Problem | Agent Tooling Solution |
+|---------|----------------------|
+| Locked into one LLM provider | **Multi-provider agent** powered by OpenHands — Ollama, Anthropic, OpenAI, Google, Mistral, Groq |
+| Tools run unsandboxed on host | **Workspace abstraction** — Local, Docker, or Remote execution environments |
+| No interop between agent systems | **Pi-dev bridge** — bidirectional MCP/RPC protocol exchange |
+| Rigid tool definitions | **`@tool` decorator** — one definition, auto-generates OpenAI + MCP schemas |
+
+---
+
+## Quick Start
 
 ```bash
+# Core package
 pip install agent-tooling-layer
 
-# With MCP server support:
-pip install "agent-tooling-layer[mcp]"
+# With OpenHands multi-provider support
+pip install "agent-tooling-layer[openhands]"
 
-# With HTTP server support:
-pip install "agent-tooling-layer[server]"
+# With Docker sandboxing
+pip install "agent-tooling-layer[docker]"
 
-# Everything:
+# Everything
 pip install "agent-tooling-layer[all]"
 ```
 
-### From Source
-
 ```bash
-git clone https://github.com/jasperan/agent-tooling.git
-cd agent-tooling
-pip install -e .
+# Chat with any LLM provider
+agent-tooling --chat --model ollama/qwen3-coder
+agent-tooling --chat --model anthropic/claude-sonnet-4-20250514
+agent-tooling --chat --model openai/gpt-4o
+
+# Chat with Docker sandboxing
+agent-tooling --chat --workspace docker
+
+# Connect to pi-dev coding agent
+agent-tooling --bridge pidev
+
+# List supported providers
+agent-tooling --providers
 ```
 
 ---
 
-## 📓 Notebooks
+## OpenHands Integration
 
-Interactive Jupyter notebooks demonstrating tool capabilities:
+[OpenHands](https://github.com/OpenHands/OpenHands) is an open platform for AI software developers. Agent Tooling embeds its SDK to provide:
 
-| Name | Description | Link |
-| ---- | ----------- | ---- |
-| agent_tooling_demo | Comprehensive demo of all tool categories with arena mode | [![Open Notebook](https://img.shields.io/badge/Open%20Notebook-orange?style=for-the-badge)](notebooks/agent_tooling_demo.ipynb) |
+### Multi-Provider LLM Support
 
----
-
-## 🚀 Features
-
-### ✅ Unified Tool Abstraction
-
-- **`@tool` Decorator**: Define tools with automatic schema generation
-- **Direct + MCP**: Same tool works both ways
-- **Type-Safe**: Pydantic validation for inputs/outputs
-- **Auto-Documentation**: Schemas generated from docstrings
-
-### 🛠️ Tool Categories
-
-| Category | Tools | Description |
-|----------|-------|-------------|
-| **Developer** | `read_file`, `write_file`, `execute_python`, `execute_shell` | File system and code execution |
-| **Data** | `query_database`, `call_api`, `fetch_json`, `scrape_webpage` | Database and API access |
-| **Cognitive** | `calculate`, `web_search`, `wikipedia_search` | Reasoning support tools |
-| **Communication** | `send_email`, `slack_notify`, `webhook` | Notifications (coming soon) |
-| **Media** | `analyze_image`, `read_pdf`, `transcribe` | File processing (coming soon) |
-
-### 🔗 Tool Composition
-
-Build complex workflows from atomic tools:
+Use any LLM provider with a single `provider/model` syntax:
 
 ```python
-from agent_tooling import ToolComposer, ToolStep
+from agent_tooling.agents.base import BaseAgent
 
-# Research Assistant: search -> summarize -> save
-research = ToolComposer.sequential(
-    name="research_assistant",
-    description="Search, summarize, and save results",
-    tools=[
-        ToolStep("web_search", output_key="results"),
-        ToolStep("summarize", input_mapping={"text": "results"}),
-        ToolStep("write_file", input_mapping={"content": "summary"}),
-    ]
+# Local Ollama (default, no API key needed)
+agent = BaseAgent(model="ollama/qwen3-coder")
+
+# Anthropic Claude
+agent = BaseAgent(model="anthropic/claude-sonnet-4-20250514")
+
+# OpenAI GPT
+agent = BaseAgent(model="openai/gpt-4o")
+
+# Google Gemini
+agent = BaseAgent(model="google/gemini-pro")
+
+# Mistral
+agent = BaseAgent(model="mistral/mistral-large-latest")
+
+# Groq (fast inference)
+agent = BaseAgent(model="groq/llama-3.3-70b-versatile")
+
+# Interactive chat session
+agent.run_interactive()
+```
+
+When OpenHands SDK is installed, all providers are available through its provider-agnostic `LLM` class. Without it, Ollama and Anthropic still work via the built-in Anthropic SDK fallback.
+
+```
+$ agent-tooling --providers
+
+┌──────────────┬────────────────────────────┬──────────────────┐
+│ Provider     │ Description                │ Env Variable     │
+├──────────────┼────────────────────────────┼──────────────────┤
+│ ollama/*     │ Local Ollama models        │ OLLAMA_BASE_URL  │
+│ anthropic/*  │ Anthropic API (Claude)     │ ANTHROPIC_API_KEY │
+│ openai/*     │ OpenAI API (GPT)           │ OPENAI_API_KEY   │
+│ google/*     │ Google AI (Gemini)         │ GOOGLE_API_KEY   │
+│ mistral/*    │ Mistral AI                 │ MISTRAL_API_KEY  │
+│ groq/*       │ Groq (fast inference)      │ GROQ_API_KEY     │
+└──────────────┴────────────────────────────┴──────────────────┘
+```
+
+### Sandboxed Execution via Docker
+
+Tools marked with `sandbox_required=True` run inside Docker containers, protecting the host system:
+
+```python
+from agent_tooling import tool
+from agent_tooling.workspace.docker import DockerWorkspace
+from agent_tooling.agents.base import BaseAgent
+
+# Define a tool that requires sandboxing
+@tool(name="run_untrusted", category="developer", sandbox_required=True)
+def run_untrusted(code: str) -> str:
+    """Execute untrusted code in a sandbox."""
+    exec(code)
+    return "executed"
+
+# Create agent with Docker workspace
+agent = BaseAgent(
+    model="ollama/qwen3-coder",
+    workspace=DockerWorkspace(image="python:3.12-slim"),
 )
+agent.run_interactive()
+```
+
+The workspace abstraction provides three execution environments:
+
+| Workspace | Use Case | Isolation |
+|-----------|----------|-----------|
+| `LocalWorkspace` | Development, trusted tools | None (in-process) |
+| `DockerWorkspace` | Untrusted code, production | Full container isolation |
+| `RemoteWorkspace` | Distributed execution | Network-isolated via HTTP |
+
+```python
+from agent_tooling.workspace.local import LocalWorkspace
+from agent_tooling.workspace.docker import DockerWorkspace
+from agent_tooling.workspace.remote import RemoteWorkspace
+
+# Default: tools run in-process (same as before)
+ws = LocalWorkspace()
+
+# Docker: tools run in containers via OpenHands
+ws = DockerWorkspace(image="python:3.12-slim")
+
+# Remote: tools run on a remote agent-server
+ws = RemoteWorkspace(server_url="http://agent-server:3000")
 ```
 
 ---
 
-## 💻 Usage
+## Pi-dev Bridge
 
-### 1. Interactive CLI
+[Pi-dev](https://buildwithpi.ai/) is a minimal terminal-based coding agent. Agent Tooling connects to it via **MCP and RPC protocols** — no TypeScript dependencies required.
 
-```bash
-# Launch interactive menu
-agent-tooling
-
-# List all tools
-agent-tooling --list
-
-# Arena mode: compare tools
-agent-tooling --arena
-
-# Start MCP server
-agent-tooling --mcp
-```
-
-**Interactive Experience:**
-```text
-╭────────────────────────────────────────────╮
-│ AGENT TOOLING CLI                          │
-│ The Tooling Layer of the AI Agent Stack    │
-╰────────────────────────────────────────────╯
-
-? Select an action:
-  List Tools
-  Run Tool
-  Arena: Compare Tools
-  Dashboard
-  MCP Server
-  Exit
-```
-
-### 2. Python API
+### Bidirectional Tool Exchange
 
 ```python
-from agent_tooling import tool, ToolRegistry
+from agent_tooling.bridges.pidev import PiDevBridge
 
-# Define a custom tool
-@tool(name="greet", category="custom", mcp_enabled=True)
+bridge = PiDevBridge()
+
+# Direction 1: Serve agent-tooling's tools TO pi-dev
+# Pi-dev discovers them via MCP protocol
+config = bridge.get_mcp_config()
+# Returns: {"command": ["python", "-m", "agent_tooling.cli", "--mcp"], ...}
+# Add this to pi-dev's MCP settings
+
+# Direction 2: Import pi-dev's tools INTO agent-tooling
+# Pi-dev's read/write/edit/bash tools become available in the registry
+imported = bridge.consume_pidev_tools()
+# Returns: ["pidev_read", "pidev_write", "pidev_edit", "pidev_bash", ...]
+```
+
+### CLI Integration
+
+```bash
+# Import pi-dev tools into the registry
+agent-tooling --bridge pidev
+
+# Then chat using both agent-tooling + pi-dev tools
+agent-tooling --chat
+```
+
+### How It Works
+
+```
+Pi-dev (TypeScript/Node)              Agent-Tooling (Python)
+       │                                      │
+       │──── MCP protocol (stdio) ───────────>│  Pi-dev discovers tools
+       │                                      │
+       │<──── RPC (stdin/stdout) ─────────────│  Agent-tooling imports tools
+       │                                      │
+       ▼                                      ▼
+  Pi-dev uses agent-tooling's         Agent-tooling uses pi-dev's
+  calculate, web_search, etc.         read, write, edit, bash, etc.
+```
+
+---
+
+## Core Features
+
+### `@tool` Decorator
+
+Define tools once, use them everywhere — direct Python, OpenAI function calling, and MCP:
+
+```python
+from agent_tooling import tool, ToolError
+
+@tool(name="greet", category="custom", mcp_enabled=True, sandbox_required=False)
 def greet(name: str, formal: bool = False) -> str:
     """Generate a greeting message.
 
@@ -162,54 +241,71 @@ print(result.data)  # "Good day, Alice. How may I assist you?"
 
 # Get schema for function calling
 schema = greet.to_openai_function()
+
+# Get MCP tool format
+mcp_schema = greet.to_mcp_tool()
 ```
 
-### 3. Using Built-in Tools
+### Tool Categories
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| **Developer** | `read_file`, `write_file`, `execute_python`, `execute_shell` | File system and code execution |
+| **Data** | `query_database`, `call_api`, `fetch_json`, `scrape_webpage` | Database and API access |
+| **Cognitive** | `calculate`, `web_search`, `wikipedia_search` | Reasoning support tools |
+| **Media** | `pdf_to_markdown`, `analyze_image`, `summarize_pdf` | File processing |
+| **Pi-dev** | `pidev_read`, `pidev_write`, `pidev_edit`, `pidev_bash` | Imported via bridge |
+
+### Tool Composition
+
+Build complex workflows from atomic tools:
 
 ```python
-from agent_tooling.tools.developer import read_file, execute_python
-from agent_tooling.tools.cognitive import calculate, web_search
+from agent_tooling import ToolComposer, ToolStep
 
-# Read a file
-result = read_file(path="README.md")
-print(result.data[:100])
-
-# Execute Python code
-result = execute_python(code="result = sum(range(100))")
-print(result.data)  # {'return_value': 4950, ...}
-
-# Calculate
-result = calculate(expression="sqrt(144) + pi")
-print(result.data)  # {'result': 15.14159...}
-
-# Search the web
-results = web_search(query="Python MCP protocol")
-for r in results.data:
-    print(f"- {r['title']}: {r['url']}")
+# Research Assistant: search -> summarize -> save
+research = ToolComposer.sequential(
+    name="research_assistant",
+    description="Search, summarize, and save results",
+    tools=[
+        ToolStep("web_search", output_key="results"),
+        ToolStep("summarize", input_mapping={"text": "results"}),
+        ToolStep("write_file", input_mapping={"content": "summary"}),
+    ]
+)
 ```
 
-### 4. MCP Server Mode
+### Tool Registry
 
-Expose your tools to any MCP-compatible client (Claude, etc.):
+Tools are automatically registered and discoverable:
 
-```bash
-# Start MCP server
-agent-tooling --mcp
+```python
+from agent_tooling import ToolRegistry
 
-# Or from Python
-from agent_tooling.mcp import create_mcp_server
-server = create_mcp_server(name="my-tools")
-server.run_stdio()
+# List all tools (including pi-dev imports)
+for tool in ToolRegistry.list_tools():
+    print(f"{tool['name']}: {tool['description']}")
+
+# Get a specific tool
+tool = ToolRegistry.get("calculate")
+result = tool.run(expression="1 + 1")
+
+# Get schemas for function calling
+schemas = ToolRegistry.to_openai_functions()
 ```
 
-### 5. HTTP Server Mode
+---
+
+## Server Interfaces
+
+### HTTP Server + WebSocket
 
 ```bash
 # Start HTTP server on port 8082
 agent-tooling-server --port 8082
 ```
 
-Then use the REST API:
+REST API:
 
 ```bash
 # List tools
@@ -224,123 +320,177 @@ curl -X POST http://localhost:8082/execute \
 curl http://localhost:8082/schemas/openai
 ```
 
----
+WebSocket for real-time agent sessions:
 
-## 🧠 Architecture
+```javascript
+const ws = new WebSocket("ws://localhost:8082/ws");
 
-### The `@tool` Decorator
+// Send a message
+ws.send(JSON.stringify({type: "message", content: "Hello"}));
 
-The decorator extracts everything needed from your function:
+// Execute a tool via WebSocket
+ws.send(JSON.stringify({
+    type: "message",
+    tool_name: "calculate",
+    parameters: {expression: "2 + 2"}
+}));
 
-```python
-@tool(name="my_tool", category="custom", mcp_enabled=True)
-def my_tool(required_param: str, optional_param: int = 10) -> dict:
-    """Short description for the tool.
-
-    Args:
-        required_param: Description of this parameter
-        optional_param: Description with default value
-
-    Returns:
-        What the tool returns
-    """
-    return {"result": f"{required_param}: {optional_param}"}
+// Receive results
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    // {type: "tool_result", name: "calculate", result: {success: true, data: ...}}
+};
 ```
 
-Automatically generates:
-- JSON Schema for validation
-- OpenAI function calling format
-- MCP tool format
-- Parameter validation
+### MCP Server
 
-### Tool Result
+Expose tools to any MCP-compatible client (Claude, pi-dev, etc.):
 
-All tools return a `ToolResult`:
-
-```python
-ToolResult(
-    success=True,           # Did it work?
-    data={"key": "value"},  # The result data
-    error=None,             # Error message if failed
-    tool_name="my_tool",    # Which tool produced this
-    execution_time_ms=12.5, # How long it took
-    metadata={},            # Additional info
-)
-```
-
-### Registry
-
-Tools are automatically registered:
-
-```python
-from agent_tooling import ToolRegistry
-
-# List all tools
-for tool in ToolRegistry.list_tools():
-    print(f"{tool['name']}: {tool['description']}")
-
-# Get a specific tool
-tool = ToolRegistry.get("calculate")
-result = tool.run(expression="1 + 1")
-
-# Get schemas for function calling
-schemas = ToolRegistry.to_openai_functions()
+```bash
+agent-tooling --mcp
 ```
 
 ---
 
-## 📊 Visual Modes
+## CLI Reference
 
-### Arena Mode
+```bash
+# Interactive menu
+agent-tooling
 
-Compare multiple tools on the same task:
+# Chat with agent
+agent-tooling --chat                                    # Default: ollama/qwen3-coder
+agent-tooling --chat --model anthropic/claude-sonnet-4-20250514  # Any provider
+agent-tooling --chat --workspace docker                 # Sandboxed execution
 
-```python
-from agent_tooling.visualization import ToolArena
+# Tool management
+agent-tooling --list                    # List all tools
+agent-tooling --schemas                 # Show JSON schemas
+agent-tooling --arena                   # Compare tools side by side
 
-arena = ToolArena()
-arena.compare(
-    tools=["web_search", "wikipedia_search"],
-    query="machine learning"
-)
-```
+# Integrations
+agent-tooling --bridge pidev            # Import pi-dev tools
+agent-tooling --providers               # Show supported LLM providers
+agent-tooling --mcp                     # Start MCP server
 
-### Dashboard
-
-Real-time monitoring of tool activity:
-
-```python
-from agent_tooling.visualization import ToolDashboard
-
-dashboard = ToolDashboard()
-dashboard.start()  # Live terminal UI
-```
-
-### Traces
-
-Step-by-step execution visualization:
-
-```python
-from agent_tooling.visualization import ToolTracer
-
-tracer = ToolTracer()
-with tracer.trace("my_workflow") as trace:
-    trace.add_step("fetch_data", "input", {"url": "..."})
-    trace.add_step("process", "process", {"items": 100})
-    trace.add_step("save", "output", {"path": "result.json"})
+# Demo mode
+agent-tooling --demo                    # Safe tools only
+agent-tooling --demo --demo-network     # Include network tools
+agent-tooling --demo --demo-ollama      # Include Ollama tools
+agent-tooling --demo --demo-all         # Run everything
+agent-tooling --demo-json               # Output as JSON
 ```
 
 ---
 
-## 📚 Appendix A: Adding Custom Tools
+## Architecture
 
-1. Create a new file in `src/agent_tooling/tools/your_category/`:
+```
+                    Pi-dev (TS/Node)
+                         │
+                    MCP / RPC
+                         │
+┌────────────────────────┼────────────────────────┐
+│              Agent-Tooling (Python)              │
+│                                                  │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Tools Layer                               │   │
+│  │ @tool decorator → ToolRegistry → schemas  │   │
+│  └──────────────────────────────────────────┘   │
+│                      │                           │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Workspace Layer                           │   │
+│  │ LocalWorkspace │ DockerWorkspace │ Remote  │   │
+│  └──────────────────────────────────────────┘   │
+│                      │                           │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Agent Layer                               │   │
+│  │ BaseAgent (OpenHands LLM) → OllamaAgent   │   │
+│  │ Multi-provider: Anthropic/OpenAI/Google/…  │   │
+│  └──────────────────────────────────────────┘   │
+│                      │                           │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Server Layer                              │   │
+│  │ REST API + WebSocket + MCP stdio          │   │
+│  └──────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────┘
+                         │
+                    SDK / Protocol
+                         │
+                  OpenHands (Python)
+```
+
+### Module Map
+
+```
+src/agent_tooling/
+├── tools/                     # Tool definitions & registry
+│   ├── base.py               # BaseTool, ToolResult, ToolDefinition
+│   ├── decorator.py          # @tool decorator (sandbox_required flag)
+│   ├── registry.py           # Global ToolRegistry singleton
+│   └── <categories>/         # developer, cognitive, data, media
+├── agents/
+│   ├── base.py               # BaseAgent — multi-provider via OpenHands
+│   └── ollama.py             # OllamaAgent — thin BaseAgent wrapper
+├── workspace/                 # Execution environments
+│   ├── base.py               # Abstract Workspace + CommandResult
+│   ├── local.py              # LocalWorkspace (in-process, default)
+│   ├── docker.py             # DockerWorkspace (container isolation)
+│   └── remote.py             # RemoteWorkspace (HTTP to agent-server)
+├── bridges/
+│   └── pidev.py              # Pi-dev MCP/RPC bidirectional bridge
+├── mcp/
+│   ├── server.py             # MCP stdio server
+│   └── client.py             # MCP client for external servers
+├── server.py                  # FastAPI REST + WebSocket server
+├── interceptor.py            # Workspace-aware tool execution router
+├── composer.py               # Tool composition (sequential, parallel, pipeline)
+├── cli.py                    # CLI with --model, --workspace, --bridge
+└── visualization/            # Arena, dashboard, traces
+```
+
+---
+
+## Installation Options
+
+```bash
+# Core only (tools, registry, local workspace)
+pip install agent-tooling-layer
+
+# Multi-provider LLM support via OpenHands
+pip install "agent-tooling-layer[openhands]"
+
+# Docker sandboxed execution
+pip install "agent-tooling-layer[docker]"
+
+# Pi-dev bridge (protocol-only, no extra deps)
+pip install "agent-tooling-layer[pidev]"
+
+# MCP server
+pip install "agent-tooling-layer[mcp]"
+
+# HTTP server
+pip install "agent-tooling-layer[server]"
+
+# PDF/media processing
+pip install "agent-tooling-layer[media]"
+
+# Development tools
+pip install "agent-tooling-layer[dev]"
+
+# Everything
+pip install "agent-tooling-layer[all]"
+```
+
+---
+
+## Adding Custom Tools
 
 ```python
 from agent_tooling import tool, ToolError
 
-@tool(name="my_custom_tool", category="your_category", mcp_enabled=True)
-def my_custom_tool(param1: str, param2: int = 0) -> dict:
+@tool(name="my_tool", category="custom", mcp_enabled=True, sandbox_required=False)
+def my_tool(param1: str, param2: int = 0) -> dict:
     """Description of what this tool does.
 
     Args:
@@ -351,148 +501,39 @@ def my_custom_tool(param1: str, param2: int = 0) -> dict:
         Dictionary with results
     """
     try:
-        # Your implementation
         return {"result": f"Processed {param1} with {param2}"}
     except Exception as e:
-        raise ToolError(str(e), tool_name="my_custom_tool")
+        raise ToolError(str(e), tool_name="my_tool")
 ```
 
-2. Import it in the category's `__init__.py`
-3. The tool is now available everywhere!
+The tool is immediately available in the registry, MCP server, HTTP API, and any agent session.
 
 ---
 
-## 🔧 Appendix B: Troubleshooting
+## Troubleshooting
 
-- **Tool not found**: Ensure the tool module is imported before use
-- **MCP connection failed**: Check that the server is running in stdio mode
-- **Timeout errors**: Increase timeout parameter for slow operations
-- **Permission denied**: Check file/network access permissions
-
----
-
-## 🧪 Appendix C: Tool Samples (Demo Mode)
-
-Run `agent-tooling --demo` to execute all safe samples interactively. Use flags to include more:
-
-```bash
-agent-tooling --demo                  # Safe tools only
-agent-tooling --demo --demo-network   # Include network-dependent tools
-agent-tooling --demo --demo-ollama    # Include Ollama-dependent tools
-agent-tooling --demo --demo-all       # Run everything
-agent-tooling --demo-json             # Output results as JSON
-```
-
-Below are sample inputs and outputs for each tool category.
-
-### Cognitive Tools
-
-#### `calculate` — Evaluate mathematical expressions
-
-| Sample | Input | Output |
-|--------|-------|--------|
-| Basic arithmetic | `{"expression": "2 + 2"}` | `{"result": 4, "type": "int"}` |
-| Scientific | `{"expression": "sqrt(144) + pow(2, 3)"}` | `{"result": 20.0, "type": "float"}` |
-| Trigonometry | `{"expression": "sin(pi / 2)"}` | `{"result": 1.0, "type": "float"}` |
-
-#### `web_search` — Search the web (requires network)
-
-| Sample | Input |
-|--------|-------|
-| Tech search | `{"query": "Python MCP protocol", "num_results": 3}` |
-
-#### `wikipedia_search` — Wikipedia lookup (requires network)
-
-| Sample | Input |
-|--------|-------|
-| Science lookup | `{"query": "Large language model", "sentences": 3}` |
-
-### Data Tools
-
-#### `query_database` — Execute SQL queries
-
-| Sample | Input | Output |
-|--------|-------|--------|
-| Mock SELECT | `{"sql": "SELECT * FROM users LIMIT 5"}` | `{"rows": [{"id": 1, "name": "Example Row 1"}, {"id": 2, "name": "Example Row 2"}], "row_count": 2}` |
-
-#### `call_api` — HTTP API requests (requires network)
-
-| Sample | Input |
-|--------|-------|
-| Get IP | `{"url": "https://httpbin.org/ip", "method": "GET"}` |
-
-#### `fetch_json` — Fetch JSON data (requires network)
-
-| Sample | Input |
-|--------|-------|
-| Fetch UUID | `{"url": "https://httpbin.org/uuid"}` |
-
-### Developer Tools
-
-#### `read_file` — Read file contents
-
-| Sample | Input | Output (truncated) |
-|--------|-------|--------|
-| Read self | `{"path": "src/agent_tooling/tools/developer/filesystem.py"}` | `"""File System Tools - Read, write, and navigate...` |
-
-#### `file_exists` — Check if a path exists
-
-| Sample | Input | Output |
-|--------|-------|--------|
-| Check README | `{"path": "README.md"}` | `{"exists": true, "is_file": true, "is_dir": false}` |
-
-#### `execute_python` — Execute Python code
-
-| Sample | Input | Output |
-|--------|-------|--------|
-| Sum range | `{"code": "result = sum(range(1, 101))"}` | `{"return_value": 5050}` |
-| List comprehension | `{"code": "result = [x**2 for x in range(10)]"}` | `{"return_value": [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]}` |
-
-#### `get_file_info` — File metadata
-
-| Sample | Input | Output (key fields) |
-|--------|-------|--------|
-| Info self | `{"path": "src/.../filesystem.py"}` | `{"name": "filesystem.py", "is_file": true, "size_bytes": 18721, "extension": ".py"}` |
-
-#### `search_files` — Search for patterns in files
-
-| Sample | Input | Output |
-|--------|-------|--------|
-| Search imports | `{"pattern": "from agent_tooling", "include_glob": "*.py", "max_results": 5}` | `[{"file": "tests/test_tools.py", "line": 4, "content": "from agent_tooling import ..."}]` |
-
-### Media Tools
-
-#### `analyze_image` — Vision analysis via Ollama llava (requires Ollama)
-
-| Sample | Input |
-|--------|-------|
-| Describe URL | `{"source": "https://example.com/photo.png"}` |
-
-#### `pdf_to_markdown` — Convert PDF to markdown
-
-| Sample | Input | Output |
-|--------|-------|--------|
-| Convert sample | `{"path": "sample.pdf"}` | `"# Agent Tooling - Sample Document\n\n## Introduction\n\nThis is a sample PDF..."` |
-
-#### `summarize_pdf` — Summarize PDF via Ollama (requires Ollama)
-
-| Sample | Input |
-|--------|-------|
-| Summarize sample | `{"path": "sample.pdf", "max_pages": 1}` |
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
+| Issue | Fix |
+|-------|-----|
+| Provider not available | Install OpenHands SDK: `pip install agent-tooling-layer[openhands]` |
+| Docker workspace fails | Install Docker extras: `pip install agent-tooling-layer[docker]` |
+| Pi-dev bridge imports nothing | Start pi-dev in RPC mode: `npx pi --mode rpc` |
+| Tool not found | Ensure the tool module is imported before use |
+| MCP connection failed | Check that the server is running in stdio mode |
 
 ---
 
 ## Related Projects
 
-- [agent-reasoning](https://github.com/jasperan/agent-reasoning) - The Reasoning Layer
-- [agent-application](https://github.com/jasperan/agent-application) - The Application Layer (coming soon)
-- [agent-infrastructure](https://github.com/jasperan/agent-infrastructure) - The Infrastructure Layer (coming soon)
+- [OpenHands](https://github.com/OpenHands/OpenHands) — Open platform for AI software developers
+- [Pi-dev](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — Minimal terminal coding agent
+- [Agent Stack Whitepaper](https://github.com/jasperan/agent-stack-whitepaper) — Conceptual architecture
+- [agent-reasoning](https://github.com/jasperan/agent-reasoning) — The Reasoning Layer
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
