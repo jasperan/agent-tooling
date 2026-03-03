@@ -163,6 +163,7 @@ class FunctionTool(BaseTool):
         description: Optional[str] = None,
         category: str = "general",
         mcp_enabled: bool = True,
+        sandbox_required: bool = False,
         verbose: bool = False,
     ):
         super().__init__(verbose=verbose)
@@ -171,6 +172,7 @@ class FunctionTool(BaseTool):
         self.description = description or (func.__doc__ or "").split("\n")[0].strip() or f"Tool: {self.name}"
         self.category = category
         self.mcp_enabled = mcp_enabled
+        self.sandbox_required = sandbox_required
         self._parameters = _extract_parameters(func)
 
     def get_parameters(self) -> List[ToolParameter]:
@@ -203,6 +205,7 @@ def tool(
     description: Optional[str] = None,
     category: str = "general",
     mcp_enabled: bool = True,
+    sandbox_required: bool = False,
     auto_register: bool = True,
 ) -> Callable:
     """
@@ -257,6 +260,7 @@ def tool(
             description=description,
             category=category,
             mcp_enabled=mcp_enabled,
+            sandbox_required=sandbox_required,
         )
 
         # Make it callable like the original function
@@ -286,6 +290,7 @@ def tool(
         wrapper.description = func_tool.description
         wrapper.category = func_tool.category
         wrapper.mcp_enabled = func_tool.mcp_enabled
+        wrapper.sandbox_required = func_tool.sandbox_required
 
         # Register in global registry
         if auto_register:
@@ -312,6 +317,7 @@ def create_tool(
     description: Optional[str] = None,
     category: str = "general",
     mcp_enabled: bool = True,
+    sandbox_required: bool = False,
     auto_register: bool = True,
 ) -> FunctionTool:
     """
@@ -325,6 +331,7 @@ def create_tool(
         description=description,
         category=category,
         mcp_enabled=mcp_enabled,
+        sandbox_required=sandbox_required,
     )
 
     if auto_register:

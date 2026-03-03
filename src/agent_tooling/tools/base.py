@@ -80,6 +80,7 @@ class ToolDefinition(BaseModel):
     parameters: List[ToolParameter] = Field(default_factory=list, description="Tool parameters")
     category: str = Field(default="general", description="Tool category")
     mcp_enabled: bool = Field(default=True, description="Whether to expose via MCP")
+    sandbox_required: bool = Field(default=False, description="Whether this tool requires sandboxed execution")
 
     def to_json_schema(self) -> Dict[str, Any]:
         """Generate JSON Schema for function calling / MCP."""
@@ -146,6 +147,7 @@ class BaseTool(ABC):
     description: str = "Base tool - override this"
     category: str = "general"
     mcp_enabled: bool = True
+    sandbox_required: bool = False
 
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
@@ -161,6 +163,7 @@ class BaseTool(ABC):
                 parameters=self.get_parameters(),
                 category=self.category,
                 mcp_enabled=self.mcp_enabled,
+                sandbox_required=self.sandbox_required,
             )
         return self._definition
 
