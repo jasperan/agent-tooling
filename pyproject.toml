@@ -61,15 +61,16 @@ docker = [
     "openhands-tools>=0.1.0",
     "openhands-workspace>=0.1.0",
 ]
-pidev = []
+pidev = []  # Protocol-only, no Python deps needed
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
+    "tomli>=2.0.0;python_version<'3.11'",
 ]
 all = [
-    "agent-tooling-layer[mcp,server,ollama,media,openhands,docker,dev]",
+    "agent-tooling-layer[mcp,server,ollama,media,openhands,docker,pidev,dev]",
 ]
 
 [project.urls]
