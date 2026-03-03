@@ -258,10 +258,13 @@ def show_schemas_command():
             ))
 
 
-def chat_command(verbose: bool = True):
+def chat_command(verbose: bool = True, workspace=None):
     """Start an interactive chat session with the Ollama agent."""
     try:
-        agent = OllamaAgent(verbose=verbose)
+        kwargs = {"verbose": verbose}
+        if workspace:
+            kwargs["workspace"] = workspace
+        agent = OllamaAgent(**kwargs)
         agent.run_interactive()
     except KeyboardInterrupt:
         console.print("\n[dim]Chat session ended.[/dim]")
@@ -509,6 +512,14 @@ def main():
     parser.add_argument("--demo-all", action="store_true", help="Include all tools in demo (network + ollama + destructive)")
     parser.add_argument("--demo-json", action="store_true", help="Output demo results as JSON")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output (show tool calls/results)")
+    parser.add_argument("--model", metavar="PROVIDER/MODEL",
+                        help="LLM model (e.g., ollama/qwen3-coder, anthropic/claude-sonnet-4-20250514)")
+    parser.add_argument("--workspace", "-w", metavar="TYPE",
+                        help="Execution workspace: local (default), docker, remote:URL")
+    parser.add_argument("--bridge", metavar="SYSTEM",
+                        help="Connect to external system: pidev")
+    parser.add_argument("--providers", action="store_true",
+                        help="List supported LLM providers")
 
     args = parser.parse_args()
 
@@ -518,8 +529,47 @@ def main():
     except ImportError:
         pass
 
-    if args.chat:
-        chat_command(verbose=args.verbose)
+    if args.providers:
+        print_banner()
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Provider/Model", style="cyan")
+        table.add_column("Description")
+        table.add_column("Env Variable", style="dim")
+        providers = [
+            ("ollama/*", "Local Ollama models (default)", "OLLAMA_BASE_URL"),
+            ("anthropic/*", "Anthropic API (Claude)", "ANTHROPIC_API_KEY"),
+            ("openai/*", "OpenAI API (GPT)", "OPENAI_API_KEY"),
+            ("google/*", "Google AI (Gemini)", "GOOGLE_API_KEY"),
+            ("mistral/*", "Mistral AI", "MISTRAL_API_KEY"),
+            ("groq/*", "Groq (fast inference)", "GROQ_API_KEY"),
+        ]
+        for p, desc, env in providers:
+            table.add_row(p, desc, env)
+        console.print(table)
+        console.print("\n[dim]Providers beyond ollama/anthropic require OpenHands SDK:[/dim]")
+        console.print("[dim]  pip install agent-tooling-layer[openhands][/dim]")
+        return
+    elif args.chat:
+        # Resolve workspace
+        workspace = None
+        if args.workspace:
+            if args.workspace == "docker":
+                from agent_tooling.workspace.docker import DockerWorkspace
+                workspace = DockerWorkspace()
+            elif args.workspace.startswith("remote:"):
+                from agent_tooling.workspace.remote import RemoteWorkspace
+                workspace = RemoteWorkspace(server_url=args.workspace[7:])
+
+        if args.model:
+            from agent_tooling.agents.base import BaseAgent
+            agent = BaseAgent(
+                model=args.model,
+                workspace=workspace,
+                verbose=args.verbose,
+            )
+            agent.run_interactive()
+        else:
+            chat_command(verbose=args.verbose, workspace=workspace)
     elif args.demo or args.demo_json:
         print_banner()
         use_all = args.demo_all
