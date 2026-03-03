@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-tooling-layer"
-version = "0.1.0"
+version = "0.2.0"
 description = "The Tooling Layer - Transform agent decisions into actions via unified tool abstractions"
 readme = "README.md"
 license = {text = "MIT"}
