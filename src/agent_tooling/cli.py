@@ -549,6 +549,23 @@ def main():
         console.print("\n[dim]Providers beyond ollama/anthropic require OpenHands SDK:[/dim]")
         console.print("[dim]  pip install agent-tooling-layer[openhands][/dim]")
         return
+    elif args.bridge:
+        if args.bridge == "pidev":
+            from agent_tooling.bridges.pidev import PiDevBridge
+            bridge = PiDevBridge()
+            console.print("[cyan]Connecting to pi-dev RPC...[/cyan]")
+            imported = bridge.consume_pidev_tools()
+            if imported:
+                console.print(f"[green]Imported {len(imported)} tools from pi-dev:[/green]")
+                for name in imported:
+                    console.print(f"  - {name}")
+            else:
+                console.print("[yellow]No tools imported. Is pi-dev running in RPC mode?[/yellow]")
+                console.print("[dim]Start pi-dev with: npx pi --mode rpc[/dim]")
+            console.print("\n[dim]Tools are now available in the registry. Use --chat to interact.[/dim]")
+        else:
+            console.print(f"[red]Unknown bridge: {args.bridge}. Supported: pidev[/red]")
+        return
     elif args.chat:
         # Resolve workspace
         workspace = None

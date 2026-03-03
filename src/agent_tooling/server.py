@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 import json
 import uvicorn
 
+from agent_tooling import __version__
 from agent_tooling.tools.registry import ToolRegistry
 from agent_tooling.interceptor import ToolingInterceptor
 
@@ -62,7 +63,7 @@ class ToolListResponse(BaseModel):
 app = FastAPI(
     title="Agent Tooling Server",
     description="HTTP API for executing agent tools",
-    version="0.1.0",
+    version=__version__,
 )
 
 # Add CORS middleware
@@ -83,7 +84,7 @@ async def root():
     """Server info."""
     return {
         "name": "Agent Tooling Server",
-        "version": "0.1.0",
+        "version": __version__,
         "tools_count": ToolRegistry.count(),
     }
 

@@ -3,6 +3,7 @@
 Requires: pip install agent-tooling-layer[docker]
 """
 
+import shlex
 from agent_tooling.workspace.base import Workspace, CommandResult
 from agent_tooling.tools.base import BaseTool, ToolResult
 
@@ -44,10 +45,17 @@ class DockerWorkspace(Workspace):
             self._oh_workspace = OHDockerWorkspace()
 
     def execute_tool(self, tool: BaseTool, **kwargs) -> ToolResult:
-        """Execute tool inside Docker container."""
+        """Execute tool, routing sandbox-required tools through the container.
+
+        Note: Full container-isolated execution requires openhands-workspace
+        to provide a serialization protocol. Currently sandbox-required tools
+        still run in-process after ensuring the container is available.
+        This will be upgraded when openhands-workspace adds execution support.
+        """
         if not tool.sandbox_required:
             return tool.run(**kwargs)
         self._ensure_container()
+        # TODO: Serialize tool call and execute inside container via openhands
         return tool.run(**kwargs)
 
     def run_command(self, command: str, timeout: int = 30) -> CommandResult:
@@ -66,7 +74,7 @@ class DockerWorkspace(Workspace):
     def read_file(self, path: str) -> str:
         """Read file from container filesystem."""
         self._ensure_container()
-        result = self.run_command(f"cat {path}")
+        result = self.run_command(f"cat {shlex.quote(path)}")
         if result.exit_code != 0:
             raise FileNotFoundError(f"File not found in container: {path}")
         return result.stdout
@@ -76,7 +84,7 @@ class DockerWorkspace(Workspace):
         self._ensure_container()
         escaped = content.replace("'", "'\\''")
         self.run_command(
-            f"cat > {path} << 'AGENT_TOOLING_EOF'\n{escaped}\nAGENT_TOOLING_EOF"
+            f"cat > {shlex.quote(path)} << 'AGENT_TOOLING_EOF'\n{escaped}\nAGENT_TOOLING_EOF"
         )
 
     def cleanup(self):

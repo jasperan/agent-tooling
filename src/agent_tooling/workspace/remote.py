@@ -68,13 +68,17 @@ class RemoteWorkspace(Workspace):
 
     def read_file(self, path: str) -> str:
         """Read file from remote filesystem."""
-        resp = self._client.get("/file", params={"path": path})
-        resp.raise_for_status()
-        return resp.text
+        try:
+            resp = self._client.get("/file", params={"path": path})
+            resp.raise_for_status()
+            return resp.text
+        except Exception as e:
+            raise FileNotFoundError(f"Remote file not found or inaccessible: {path} ({e})")
 
     def write_file(self, path: str, content: str) -> None:
         """Write file to remote filesystem."""
-        self._client.post("/file", json={"path": path, "content": content})
+        resp = self._client.post("/file", json={"path": path, "content": content})
+        resp.raise_for_status()
 
     def close(self):
         """Close the HTTP client."""

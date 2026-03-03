@@ -11,9 +11,12 @@ Pi-dev integration is protocol-only — no TypeScript dependencies needed.
 """
 
 import json
+import logging
 import subprocess
 import sys
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from agent_tooling.tools.registry import ToolRegistry
 from agent_tooling.tools.base import ToolResult
@@ -35,6 +38,7 @@ class PiDevBridge:
     def __init__(self, rpc_endpoint: Optional[str] = None):
         self._rpc_endpoint = rpc_endpoint
         self._rpc_process = None
+        self._rpc_id_counter = 0
 
     def get_mcp_config(self) -> Dict[str, Any]:
         """
@@ -104,8 +108,8 @@ class PiDevBridge:
                     self._register_rpc_tool(tool_info)
                     imported.append(tool_info["name"])
 
-        except (FileNotFoundError, json.JSONDecodeError, OSError):
-            pass
+        except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+            logger.warning("Failed to connect to pi-dev RPC: %s", e)
 
         return imported
 
@@ -120,9 +124,10 @@ class PiDevBridge:
             if self._rpc_process is None or self._rpc_process.poll() is not None:
                 return {"error": "Pi-dev RPC process not running"}
 
+            self._rpc_id_counter += 1
             request = json.dumps({
                 "method": "tools/call",
-                "id": 2,
+                "id": self._rpc_id_counter,
                 "params": {
                     "name": tool_info["name"],
                     "arguments": kwargs,
