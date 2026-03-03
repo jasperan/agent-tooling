@@ -5,11 +5,11 @@ Provides:
 - REST API for tool execution
 - OpenAI-compatible function calling endpoint
 - Tool discovery and schema endpoints
-- WebSocket support for streaming (future)
+- WebSocket support for real-time agent sessions
 """
 
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import json
@@ -199,6 +199,59 @@ async def get_tools_by_category(category: str):
         ],
         "count": len(tools),
     }
+
+
+@app.websocket("/ws")
+async def websocket_agent_session(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time agent sessions.
+
+    Protocol:
+        Client sends: {"type": "message", "content": "user message"}
+        Server sends: {"type": "text", "content": "assistant response"}
+        Server sends: {"type": "tool_call", "name": "...", "input": {...}}
+        Server sends: {"type": "tool_result", "name": "...", "result": {...}}
+        Server sends: {"type": "done", "content": "final response"}
+        Client sends: {"type": "close"} to end session
+    """
+    await websocket.accept()
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+
+            if data.get("type") == "close":
+                await websocket.close()
+                break
+
+            if data.get("type") == "message":
+                content = data.get("content", "")
+
+                if "tool_name" in data:
+                    result = interceptor.execute(
+                        data["tool_name"],
+                        data.get("parameters", {}),
+                    )
+                    await websocket.send_json({
+                        "type": "tool_result",
+                        "name": data["tool_name"],
+                        "result": {
+                            "success": result.success,
+                            "data": result.data,
+                            "error": result.error,
+                            "execution_time_ms": result.execution_time_ms,
+                        },
+                    })
+                else:
+                    await websocket.send_json({
+                        "type": "text",
+                        "content": f"Received: {content}",
+                    })
+
+                await websocket.send_json({"type": "done"})
+
+    except WebSocketDisconnect:
+        pass
 
 
 def main(host: str = "0.0.0.0", port: int = 8082):
