@@ -14,6 +14,8 @@ import re
 
 from agent_tooling.tools.base import BaseTool, ToolResult, ToolError
 from agent_tooling.tools.registry import ToolRegistry
+from agent_tooling.workspace.base import Workspace
+from agent_tooling.workspace.local import LocalWorkspace
 
 
 class ToolingInterceptor:
@@ -28,14 +30,16 @@ class ToolingInterceptor:
     - Logging and tracing
     """
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, workspace: Optional[Workspace] = None):
         """
         Initialize the interceptor.
 
         Args:
             verbose: Whether to enable verbose logging
+            workspace: Workspace for tool execution (defaults to LocalWorkspace)
         """
         self.verbose = verbose
+        self.workspace = workspace or LocalWorkspace()
         self._trace: List[Dict[str, Any]] = []
 
     @property
@@ -79,7 +83,7 @@ class ToolingInterceptor:
         # Execute (save/restore verbose to avoid mutating shared tool state)
         original_verbose = tool.verbose
         tool.verbose = self.verbose
-        result = tool.run(**params)
+        result = self.workspace.execute_tool(tool, **params)
         tool.verbose = original_verbose
 
         # Record trace
