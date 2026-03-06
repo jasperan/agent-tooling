@@ -43,6 +43,53 @@ pip install "agent-tooling-layer[docker]"
 
 # Everything
 pip install "agent-tooling-layer[all]"
+
+# Or use uv
+uv add agent-tooling-layer
+uv add "agent-tooling-layer[openhands]"
+uv add "agent-tooling-layer[all]"
+```
+
+### Installation with uv
+
+```bash
+# Clone and sync
+git clone https://github.com/jasperan/agent-tooling.git
+cd agent-tooling
+uv sync
+
+# Or with extras
+uv sync --extra openhands
+uv sync --extra docker
+uv sync --all-extras
+```
+
+## Development
+
+```bash
+# Sync dependencies
+uv sync
+
+# Run tests
+uv run pytest
+
+# Lint code
+uv run ruff check .
+
+# Format code
+uv run ruff format .
+
+# Type check
+uv run ty check .
+
+# Add a new dependency
+uv add <package>
+
+# Add a dev dependency
+uv add --dev <package>
+
+# Add with extras
+uv add --extra openhands <package>
 ```
 
 ```bash
@@ -475,11 +522,12 @@ pip install "agent-tooling-layer[server]"
 # PDF/media processing
 pip install "agent-tooling-layer[media]"
 
-# Development tools
-pip install "agent-tooling-layer[dev]"
-
 # Everything
 pip install "agent-tooling-layer[all]"
+
+# Or use uv for any of the above
+uv add agent-tooling-layer
+uv add "agent-tooling-layer[all]"
 ```
 
 ---
