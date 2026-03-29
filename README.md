@@ -10,6 +10,27 @@
 [![Pi-dev](https://img.shields.io/badge/bridge-Pi--dev-ff6b35?style=for-the-badge)](https://buildwithpi.ai/)
 ![Ollama](https://img.shields.io/badge/backend-Ollama-black?style=for-the-badge)
 
+<div align="center">
+
+**[View Interactive Presentation](docs/slides/presentation.html)** | Animated overview of the project
+
+</div>
+
+<table>
+<tr>
+<td><img src="docs/slides/slide-01.png" alt="Title" width="400"/></td>
+<td><img src="docs/slides/slide-02.png" alt="Overview" width="400"/></td>
+</tr>
+<tr>
+<td><img src="docs/slides/slide-03.png" alt="Architecture" width="400"/></td>
+<td><img src="docs/slides/slide-04.png" alt="Features" width="400"/></td>
+</tr>
+<tr>
+<td><img src="docs/slides/slide-05.png" alt="Tech Stack" width="400"/></td>
+<td><img src="docs/slides/slide-06.png" alt="Getting Started" width="400"/></td>
+</tr>
+</table>
+
 Transform agent decisions into actions. Unified tool abstractions with **multi-provider LLM support** via [OpenHands](https://github.com/OpenHands/OpenHands), **sandboxed Docker execution**, and **bidirectional interop** with [pi-dev](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) coding agent.
 
 > **"Any LLM provider. Any execution environment. Any agent harness."**

@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Tooling: The Tooling Layer</title>
+
+    <!-- Font: JetBrains Mono (monospace only) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           CSS CUSTOM PROPERTIES (TERMINAL GREEN THEME)
+           =========================================== */
+        :root {
+            /* Colors */
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2129;
+            --bg-code: #0a0e14;
+            --terminal-green: #39d353;
+            --dim-green: #238636;
+            --dark-green: #1a5c2a;
+            --accent-amber: #e3b341;
+            --accent-cyan: #58a6ff;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-green: #39d353;
+            --text-dim: #484f58;
+            --border-color: #30363d;
+            --error-red: #f85149;
+
+            /* Typography */
+            --font-mono: 'JetBrains Mono', monospace;
+            --title-size: clamp(2rem, 6vw, 4.5rem);
+            --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+            --h3-size: clamp(1rem, 2.5vw, 1.5rem);
+            --body-size: clamp(0.75rem, 1.5vw, 1.05rem);
+            --small-size: clamp(0.6rem, 1vw, 0.8rem);
+            --code-size: clamp(0.65rem, 1.2vw, 0.9rem);
+
+            /* Spacing */
+            --slide-padding: clamp(1.5rem, 4vw, 4rem);
+            --content-gap: clamp(0.75rem, 2vw, 2rem);
+            --element-gap: clamp(0.25rem, 1vw, 1rem);
+
+            /* Animation */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-normal: 0.6s;
+        }
+
+        /* ===========================================
+           BASE RESET
+           =========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-mono);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===========================================
+           VIEWPORT FITTING: MANDATORY BASE STYLES
+           Include this ENTIRE file in every presentation.
+           These styles ensure slides fit exactly in the viewport.
+           =========================================== */
+
+        /* 1. Lock html/body to viewport */
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        html {
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        /* 2. Each slide = exact viewport height */
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 3. Content container with flex for centering */
+        .slide-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-height: 100%;
+            overflow: hidden;
+            padding: var(--slide-padding);
+        }
+
+        /* 4. ALL typography uses clamp() for responsive scaling */
+        /* (Already defined in :root above) */
+
+        /* 5. Cards/containers use viewport-relative max sizes */
+        .card, .container, .content-box {
+            max-width: min(90vw, 1000px);
+            max-height: min(80vh, 700px);
+        }
+
+        /* 6. Lists auto-scale with viewport */
+        .feature-list, .bullet-list {
+            gap: clamp(0.4rem, 1vh, 1rem);
+        }
+
+        .feature-list li, .bullet-list li {
+            font-size: var(--body-size);
+            line-height: 1.4;
+        }
+
+        /* 7. Grids adapt to available space */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+            gap: clamp(0.5rem, 1.5vw, 1rem);
+        }
+
+        /* 8. Images constrained to viewport */
+        img, .image-container {
+            max-width: 100%;
+            max-height: min(50vh, 400px);
+            object-fit: contain;
+        }
+
+        /* ===========================================
+           RESPONSIVE BREAKPOINTS
+           Aggressive scaling for smaller viewports
+           =========================================== */
+
+        /* Short viewports (< 700px height) */
+        @media (max-height: 700px) {
+            :root {
+                --slide-padding: clamp(0.75rem, 3vw, 2rem);
+                --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+                --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+                --h2-size: clamp(1rem, 3vw, 1.75rem);
+            }
+        }
+
+        /* Very short viewports (< 600px height) */
+        @media (max-height: 600px) {
+            :root {
+                --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+                --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+                --title-size: clamp(1.1rem, 4vw, 2rem);
+                --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+            }
+
+            .nav-dots, .keyboard-hint, .decorative {
+                display: none;
+            }
+        }
+
+        /* Extremely short (landscape phones, < 500px height) */
+        @media (max-height: 500px) {
+            :root {
+                --slide-padding: clamp(0.4rem, 2vw, 1rem);
+                --title-size: clamp(1rem, 3.5vw, 1.5rem);
+                --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+                --body-size: clamp(0.65rem, 1vw, 0.85rem);
+            }
+        }
+
+        /* Narrow viewports (< 600px width) */
+        @media (max-width: 600px) {
+            :root {
+                --title-size: clamp(1.25rem, 7vw, 2.5rem);
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===========================================
+           REDUCED MOTION
+           Respect user preferences
+           =========================================== */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.2s !important;
+            }
+
+            html {
+                scroll-behavior: auto;
+            }
+        }
+
+        /* ===========================================
+           TERMINAL GREEN: SCAN LINES + GLOW
+           =========================================== */
+
+        /* CRT scan line overlay */
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.08) 2px,
+                rgba(0, 0, 0, 0.08) 4px
+            );
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Grid pattern background */
+        .slide::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(57, 211, 83, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(57, 211, 83, 0.03) 1px, transparent 1px);
+            background-size: clamp(30px, 4vw, 50px) clamp(30px, 4vw, 50px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .slide > * {
+            position: relative;
+            z-index: 3;
+        }
+
+        /* Terminal glow effect */
+        .glow {
+            text-shadow: 0 0 10px rgba(57, 211, 83, 0.5),
+                         0 0 20px rgba(57, 211, 83, 0.3),
+                         0 0 40px rgba(57, 211, 83, 0.1);
+        }
+
+        .glow-amber {
+            text-shadow: 0 0 10px rgba(227, 179, 65, 0.5),
+                         0 0 20px rgba(227, 179, 65, 0.3);
+        }
+
+        /* ===========================================
+           ANIMATIONS
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+
+        .reveal-left {
+            opacity: 0;
+            transform: translateX(-40px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+
+        .reveal-scale {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+
+        .slide.visible .reveal,
+        .slide.visible .reveal-left,
+        .slide.visible .reveal-scale {
+            opacity: 1;
+            transform: translateY(0) translateX(0) scale(1);
+        }
+
+        /* Stagger children */
+        .reveal:nth-child(1), .reveal-left:nth-child(1) { transition-delay: 0.1s; }
+        .reveal:nth-child(2), .reveal-left:nth-child(2) { transition-delay: 0.2s; }
+        .reveal:nth-child(3), .reveal-left:nth-child(3) { transition-delay: 0.3s; }
+        .reveal:nth-child(4), .reveal-left:nth-child(4) { transition-delay: 0.4s; }
+        .reveal:nth-child(5), .reveal-left:nth-child(5) { transition-delay: 0.5s; }
+        .reveal:nth-child(6), .reveal-left:nth-child(6) { transition-delay: 0.6s; }
+        .reveal:nth-child(7), .reveal-left:nth-child(7) { transition-delay: 0.7s; }
+
+        /* Blinking cursor animation */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .cursor {
+            display: inline-block;
+            width: clamp(2px, 0.3vw, 3px);
+            height: 1.1em;
+            background: var(--terminal-green);
+            margin-left: 4px;
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+
+        /* Typewriter effect */
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        .typewriter {
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 2px solid var(--terminal-green);
+            animation: typewriter 2s steps(40) 0.5s forwards,
+                       blink 1s step-end 2.5s infinite;
+            width: 0;
+        }
+
+        .slide.visible .typewriter {
+            animation: typewriter 2s steps(40) 0.5s forwards,
+                       blink 1s step-end 2.5s infinite;
+        }
+
+        /* ===========================================
+           PROGRESS BAR
+           =========================================== */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--terminal-green);
+            box-shadow: 0 0 10px rgba(57, 211, 83, 0.5);
+            z-index: 9999;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* ===========================================
+           SLIDE COUNTER
+           =========================================== */
+        .slide-counter {
+            position: fixed;
+            top: clamp(0.5rem, 2vw, 1.5rem);
+            right: clamp(0.5rem, 2vw, 1.5rem);
+            font-family: var(--font-mono);
+            font-size: var(--small-size);
+            color: var(--text-dim);
+            z-index: 9998;
+            letter-spacing: 0.05em;
+        }
+
+        .slide-counter .current {
+            color: var(--terminal-green);
+        }
+
+        /* ===========================================
+           NAV DOTS
+           =========================================== */
+        .nav-dots {
+            position: fixed;
+            right: clamp(0.5rem, 1.5vw, 1rem);
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(4px, 0.5vh, 8px);
+            z-index: 9998;
+        }
+
+        .nav-dot {
+            width: clamp(4px, 0.4vw, 6px);
+            height: clamp(4px, 0.4vw, 6px);
+            border-radius: 50%;
+            background: var(--text-dim);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+
+        .nav-dot.active {
+            background: var(--terminal-green);
+            box-shadow: 0 0 6px rgba(57, 211, 83, 0.6);
+            transform: scale(1.4);
+        }
+
+        .nav-dot:hover {
+            background: var(--dim-green);
+        }
+
+        /* ===========================================
+           TYPOGRAPHY
+           =========================================== */
+        h1 {
+            font-family: var(--font-mono);
+            font-size: var(--title-size);
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--terminal-green);
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-family: var(--font-mono);
+            font-size: var(--h2-size);
+            font-weight: 600;
+            color: var(--terminal-green);
+            margin-bottom: var(--content-gap);
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-family: var(--font-mono);
+            font-size: var(--h3-size);
+            font-weight: 500;
+            color: var(--accent-amber);
+            margin-bottom: var(--element-gap);
+        }
+
+        p, li {
+            font-family: var(--font-mono);
+            font-size: var(--body-size);
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* Terminal prompt style */
+        .prompt {
+            color: var(--terminal-green);
+            font-weight: 600;
+        }
+
+        .prompt::before {
+            content: '$ ';
+            color: var(--dim-green);
+        }
+
+        .comment {
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .comment::before {
+            content: '# ';
+        }
+
+        /* ===========================================
+           SLIDE LAYOUTS
+           =========================================== */
+
+        /* Title slide */
+        .title-slide .slide-content {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .title-slide h1 {
+            margin-bottom: clamp(0.5rem, 1.5vw, 1.5rem);
+        }
+
+        .subtitle {
+            font-size: clamp(0.8rem, 1.8vw, 1.2rem);
+            color: var(--text-secondary);
+            max-width: min(80vw, 700px);
+        }
+
+        .version-badge {
+            display: inline-block;
+            padding: clamp(2px, 0.3vw, 4px) clamp(8px, 1vw, 16px);
+            background: rgba(57, 211, 83, 0.15);
+            border: 1px solid var(--dim-green);
+            border-radius: 4px;
+            font-size: var(--small-size);
+            color: var(--terminal-green);
+            margin-top: clamp(0.5rem, 1vw, 1rem);
+            letter-spacing: 0.05em;
+        }
+
+        /* Section header */
+        .section-header .slide-content {
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .section-number {
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 800;
+            color: rgba(57, 211, 83, 0.1);
+            line-height: 1;
+            position: absolute;
+            top: clamp(1rem, 3vw, 3rem);
+            right: clamp(1rem, 3vw, 3rem);
+        }
+
+        /* Code block */
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: clamp(0.5rem, 1.5vw, 1.5rem);
+            font-family: var(--font-mono);
+            font-size: var(--code-size);
+            line-height: 1.6;
+            overflow: hidden;
+            max-width: min(90vw, 900px);
+            width: 100%;
+        }
+
+        .code-block .line-number {
+            color: var(--text-dim);
+            display: inline-block;
+            width: clamp(1.5rem, 2vw, 2.5rem);
+            text-align: right;
+            margin-right: clamp(0.5rem, 1vw, 1rem);
+            user-select: none;
+        }
+
+        /* Syntax colors */
+        .syn-keyword { color: #ff7b72; }
+        .syn-string { color: #a5d6ff; }
+        .syn-comment { color: #8b949e; font-style: italic; }
+        .syn-function { color: #d2a8ff; }
+        .syn-class { color: #ffa657; }
+        .syn-decorator { color: var(--accent-amber); }
+        .syn-param { color: #ffa657; }
+        .syn-value { color: #79c0ff; }
+        .syn-green { color: var(--terminal-green); }
+        .syn-operator { color: #ff7b72; }
+
+        /* Feature cards */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, clamp(180px, 25vw, 280px)), 1fr));
+            gap: clamp(0.5rem, 1.5vw, 1rem);
+            width: 100%;
+            max-width: min(90vw, 1000px);
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: clamp(0.6rem, 1.5vw, 1.2rem);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--dim-green);
+            box-shadow: 0 0 15px rgba(57, 211, 83, 0.1);
+        }
+
+        .feature-card .icon {
+            font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+            margin-bottom: clamp(0.2rem, 0.5vw, 0.5rem);
+        }
+
+        .feature-card h3 {
+            font-size: clamp(0.7rem, 1.3vw, 0.95rem);
+            margin-bottom: clamp(0.15rem, 0.3vw, 0.3rem);
+        }
+
+        .feature-card p {
+            font-size: var(--small-size);
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* Two-column layout */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(1rem, 3vw, 3rem);
+            align-items: start;
+            width: 100%;
+            max-width: min(90vw, 1000px);
+        }
+
+        @media (max-width: 700px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Table styles */
+        .term-table {
+            width: 100%;
+            max-width: min(90vw, 900px);
+            border-collapse: collapse;
+            font-size: var(--small-size);
+        }
+
+        .term-table th {
+            text-align: left;
+            color: var(--accent-amber);
+            border-bottom: 1px solid var(--border-color);
+            padding: clamp(0.3rem, 0.5vw, 0.6rem) clamp(0.5rem, 1vw, 1rem);
+            font-weight: 600;
+        }
+
+        .term-table td {
+            border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+            padding: clamp(0.3rem, 0.5vw, 0.6rem) clamp(0.5rem, 1vw, 1rem);
+            color: var(--text-secondary);
+        }
+
+        .term-table td:first-child {
+            color: var(--terminal-green);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* Tag/badge */
+        .tag {
+            display: inline-block;
+            padding: clamp(1px, 0.2vw, 3px) clamp(6px, 0.8vw, 12px);
+            border-radius: 3px;
+            font-size: clamp(0.55rem, 0.9vw, 0.75rem);
+            font-weight: 500;
+            letter-spacing: 0.03em;
+        }
+
+        .tag-green { background: rgba(57, 211, 83, 0.15); color: var(--terminal-green); border: 1px solid var(--dim-green); }
+        .tag-amber { background: rgba(227, 179, 65, 0.15); color: var(--accent-amber); border: 1px solid rgba(227, 179, 65, 0.3); }
+        .tag-cyan { background: rgba(88, 166, 255, 0.15); color: var(--accent-cyan); border: 1px solid rgba(88, 166, 255, 0.3); }
+        .tag-red { background: rgba(248, 81, 73, 0.15); color: var(--error-red); border: 1px solid rgba(248, 81, 73, 0.3); }
+
+        /* Wrench icon as decorative element */
+        .wrench-deco {
+            position: absolute;
+            font-size: clamp(4rem, 12vw, 10rem);
+            opacity: 0.04;
+            color: var(--terminal-green);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Terminal window chrome */
+        .terminal-window {
+            background: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: min(90vw, 900px);
+            width: 100%;
+        }
+
+        .terminal-titlebar {
+            background: var(--bg-secondary);
+            padding: clamp(4px, 0.5vw, 8px) clamp(8px, 1vw, 14px);
+            display: flex;
+            align-items: center;
+            gap: clamp(4px, 0.5vw, 7px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .terminal-dot {
+            width: clamp(6px, 0.7vw, 10px);
+            height: clamp(6px, 0.7vw, 10px);
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background: #ff5f57; }
+        .terminal-dot.yellow { background: #febc2e; }
+        .terminal-dot.green { background: #28c840; }
+
+        .terminal-title {
+            font-size: var(--small-size);
+            color: var(--text-dim);
+            margin-left: clamp(4px, 0.5vw, 8px);
+        }
+
+        .terminal-body {
+            padding: clamp(0.5rem, 1.5vw, 1.5rem);
+            font-size: var(--code-size);
+            line-height: 1.7;
+        }
+
+        .terminal-body .line {
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        /* Architecture diagram boxes */
+        .arch-box {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: clamp(0.4rem, 1vw, 0.8rem);
+            background: var(--bg-card);
+            text-align: center;
+        }
+
+        .arch-box.active {
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 12px rgba(57, 211, 83, 0.15);
+        }
+
+        .arch-box h4 {
+            font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+            color: var(--terminal-green);
+            margin-bottom: clamp(0.1rem, 0.3vw, 0.3rem);
+            font-weight: 600;
+        }
+
+        .arch-box p {
+            font-size: clamp(0.55rem, 0.85vw, 0.7rem);
+            color: var(--text-dim);
+        }
+
+        /* Arrow connector */
+        .arrow-down {
+            text-align: center;
+            color: var(--dim-green);
+            font-size: clamp(0.8rem, 1.5vw, 1.2rem);
+            padding: clamp(0.1rem, 0.3vw, 0.3rem) 0;
+        }
+
+        /* Pipeline steps */
+        .pipeline {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.3rem, 0.8vw, 0.8rem);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .pipeline-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: clamp(0.3rem, 0.6vw, 0.6rem) clamp(0.5rem, 1vw, 1rem);
+            font-size: var(--small-size);
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .pipeline-arrow {
+            color: var(--dim-green);
+            font-size: var(--body-size);
+        }
+
+        /* Bullet list with terminal style */
+        .term-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(0.3rem, 0.7vh, 0.7rem);
+        }
+
+        .term-list li {
+            padding-left: clamp(1rem, 2vw, 1.5rem);
+            position: relative;
+            font-size: var(--body-size);
+            color: var(--text-secondary);
+        }
+
+        .term-list li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--terminal-green);
+            font-weight: 700;
+        }
+
+        /* Highlight text */
+        .hl-green { color: var(--terminal-green); }
+        .hl-amber { color: var(--accent-amber); }
+        .hl-cyan { color: var(--accent-cyan); }
+        .hl-red { color: var(--error-red); }
+
+        /* Inline code */
+        code {
+            background: rgba(57, 211, 83, 0.1);
+            border: 1px solid rgba(57, 211, 83, 0.2);
+            border-radius: 3px;
+            padding: 1px clamp(3px, 0.4vw, 6px);
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            color: var(--terminal-green);
+        }
+
+        /* Divider */
+        .divider {
+            width: clamp(40px, 8vw, 80px);
+            height: 2px;
+            background: var(--dim-green);
+            margin: clamp(0.5rem, 1vw, 1rem) 0;
+            box-shadow: 0 0 8px rgba(57, 211, 83, 0.3);
+        }
+
+        /* Closing slide */
+        .closing-slide .slide-content {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* ===========================================
+           MOBILE GRID FIX
+           =========================================== */
+        @media (max-width: 600px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Progress bar -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Slide counter -->
+    <div class="slide-counter" id="slideCounter">
+        <span class="current">01</span> / <span class="total">22</span>
+    </div>
+
+    <!-- Nav dots -->
+    <nav class="nav-dots" id="navDots" aria-label="Slide navigation"></nav>
+
+    <!-- ===========================================
+         SLIDE 01: TITLE
+         =========================================== -->
+    <section class="slide title-slide" data-slide="1">
+        <div class="slide-content">
+            <div class="reveal" style="margin-bottom: clamp(0.3rem, 0.5vw, 0.5rem);">
+                <span class="tag tag-green">PyPI: agent-tooling-layer</span>
+                <span class="tag tag-amber">Python 3.10+</span>
+                <span class="tag tag-cyan">MIT License</span>
+            </div>
+            <h1 class="reveal glow">Agent Tooling<span class="cursor"></span></h1>
+            <p class="subtitle reveal">Transform agent decisions into actions. Unified tool abstractions with multi-provider LLM support, sandboxed execution, and bidirectional interop.</p>
+            <div class="version-badge reveal">v0.1.x // The Tooling Layer</div>
+        </div>
+        <span class="wrench-deco" style="bottom: -2rem; right: -1rem;">&#128295;</span>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 02: THE PROBLEM
+         =========================================== -->
+    <section class="slide" data-slide="2">
+        <div class="slide-content">
+            <p class="comment reveal">the problem with existing frameworks</p>
+            <h2 class="reveal">Why Agent Tooling?</h2>
+            <div class="divider reveal"></div>
+            <table class="term-table reveal">
+                <thead>
+                    <tr><th>Problem</th><th>What Happens</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Provider Lock-in</td><td>Stuck with one LLM vendor. Switching means rewriting everything.</td></tr>
+                    <tr><td>Unsandboxed Execution</td><td>Tools run directly on the host. One bad <code>exec()</code> and it's over.</td></tr>
+                    <tr><td>No Interop</td><td>Agent systems can't share tools. Every framework is an island.</td></tr>
+                    <tr><td>Rigid Schemas</td><td>Different formats for OpenAI, MCP, direct calls. Triple the boilerplate.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 03: THE SOLUTION
+         =========================================== -->
+    <section class="slide" data-slide="3">
+        <div class="slide-content">
+            <p class="comment reveal">the answer</p>
+            <h2 class="reveal">One Framework, Zero Constraints</h2>
+            <div class="divider reveal"></div>
+            <table class="term-table reveal">
+                <thead>
+                    <tr><th>Problem</th><th>Agent Tooling Fix</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Provider Lock-in</td><td><span class="hl-green">Multi-provider agent</span> via OpenHands: Ollama, Anthropic, OpenAI, Google, Mistral, Groq</td></tr>
+                    <tr><td>Unsandboxed</td><td><span class="hl-green">Workspace abstraction</span>: Local, Docker, or Remote execution</td></tr>
+                    <tr><td>No Interop</td><td><span class="hl-green">Pi-dev bridge</span>: bidirectional MCP/RPC protocol exchange</td></tr>
+                    <tr><td>Rigid Schemas</td><td><span class="hl-green">@tool decorator</span>: one definition auto-generates all formats</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 04: KEY FEATURES OVERVIEW
+         =========================================== -->
+    <section class="slide" data-slide="4">
+        <div class="slide-content">
+            <h2 class="reveal">Core Capabilities</h2>
+            <div class="feature-grid">
+                <div class="feature-card reveal">
+                    <div class="icon">&#128295;</div>
+                    <h3>@tool Decorator</h3>
+                    <p>Define once, use everywhere. Auto-generates OpenAI + MCP schemas.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="icon">&#127760;</div>
+                    <h3>Multi-Provider LLM</h3>
+                    <p>6 providers via OpenHands SDK. Single provider/model syntax.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="icon">&#128230;</div>
+                    <h3>Docker Sandbox</h3>
+                    <p>Untrusted code runs in containers. Host stays protected.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="icon">&#128279;</div>
+                    <h3>Pi-dev Bridge</h3>
+                    <p>Bidirectional tool exchange via MCP and RPC protocols.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="icon">&#9881;</div>
+                    <h3>Tool Composition</h3>
+                    <p>Chain atomic tools into sequential, parallel, or pipeline workflows.</p>
+                </div>
+                <div class="feature-card reveal">
+                    <div class="icon">&#128421;</div>
+                    <h3>Server Interfaces</h3>
+                    <p>REST API, WebSocket, and MCP stdio server built in.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 05: ARCHITECTURE OVERVIEW
+         =========================================== -->
+    <section class="slide" data-slide="5">
+        <div class="slide-content">
+            <h2 class="reveal">Architecture</h2>
+            <div class="reveal" style="display:flex;flex-direction:column;align-items:center;gap:clamp(0.2rem,0.5vw,0.4rem);width:100%;max-width:min(85vw,700px);margin:0 auto;">
+                <div class="arch-box" style="width:60%;">
+                    <h4>External Agents</h4>
+                    <p>Pi-dev (TS/Node) &bull; Claude &bull; MCP Clients</p>
+                </div>
+                <div class="arrow-down">&darr; MCP / RPC &darr;</div>
+                <div class="arch-box active" style="width:80%;">
+                    <h4>Server Layer</h4>
+                    <p>REST API + WebSocket + MCP stdio</p>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-box active" style="width:80%;">
+                    <h4>Agent Layer</h4>
+                    <p>BaseAgent (OpenHands LLM) &rarr; OllamaAgent</p>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-box active" style="width:80%;">
+                    <h4>Tools Layer</h4>
+                    <p>@tool decorator &rarr; ToolRegistry &rarr; Schemas</p>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-box active" style="width:80%;">
+                    <h4>Workspace Layer</h4>
+                    <p>LocalWorkspace | DockerWorkspace | RemoteWorkspace</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 06: @TOOL DECORATOR
+         =========================================== -->
+    <section class="slide" data-slide="6">
+        <div class="slide-content">
+            <h2 class="reveal">The @tool Decorator</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Define a tool once. Get Python, OpenAI function calling, and MCP schemas for free.</p>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">tools/custom.py</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="syn-decorator">@tool</span>(<span class="syn-param">name</span>=<span class="syn-string">"greet"</span>, <span class="syn-param">category</span>=<span class="syn-string">"custom"</span>)</div>
+                    <div class="line"><span class="syn-keyword">def</span> <span class="syn-function">greet</span>(<span class="syn-param">name</span>: <span class="syn-class">str</span>, <span class="syn-param">formal</span>: <span class="syn-class">bool</span> = <span class="syn-value">False</span>) -> <span class="syn-class">str</span>:</div>
+                    <div class="line">    <span class="syn-string">"""Generate a greeting."""</span></div>
+                    <div class="line">    <span class="syn-keyword">if</span> formal:</div>
+                    <div class="line">        <span class="syn-keyword">return</span> <span class="syn-string">f"Good day, {name}."</span></div>
+                    <div class="line">    <span class="syn-keyword">return</span> <span class="syn-string">f"Hey {name}!"</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 07: SCHEMA GENERATION
+         =========================================== -->
+    <section class="slide" data-slide="7">
+        <div class="slide-content">
+            <h2 class="reveal">Auto-Generated Schemas</h2>
+            <div class="two-col reveal">
+                <div>
+                    <h3>OpenAI Format</h3>
+                    <div class="code-block" style="font-size:var(--small-size);">
+                        <div>schema = greet.<span class="syn-function">to_openai_function</span>()</div>
+                        <div class="syn-comment"># {</div>
+                        <div class="syn-comment">#   "name": "greet",</div>
+                        <div class="syn-comment">#   "parameters": {</div>
+                        <div class="syn-comment">#     "name": {"type": "string"},</div>
+                        <div class="syn-comment">#     "formal": {"type": "boolean"}</div>
+                        <div class="syn-comment">#   }</div>
+                        <div class="syn-comment"># }</div>
+                    </div>
+                </div>
+                <div>
+                    <h3>MCP Format</h3>
+                    <div class="code-block" style="font-size:var(--small-size);">
+                        <div>mcp = greet.<span class="syn-function">to_mcp_tool</span>()</div>
+                        <div class="syn-comment"># {</div>
+                        <div class="syn-comment">#   "name": "greet",</div>
+                        <div class="syn-comment">#   "inputSchema": {</div>
+                        <div class="syn-comment">#     "name": {"type": "string"},</div>
+                        <div class="syn-comment">#     "formal": {"type": "boolean"}</div>
+                        <div class="syn-comment">#   }</div>
+                        <div class="syn-comment"># }</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 08: TOOL CATEGORIES
+         =========================================== -->
+    <section class="slide" data-slide="8">
+        <div class="slide-content">
+            <h2 class="reveal">Tool Categories</h2>
+            <table class="term-table reveal">
+                <thead>
+                    <tr><th>Category</th><th>Tools</th><th>Purpose</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Developer</td><td>read_file, write_file, execute_python, execute_shell</td><td>File I/O and code execution</td></tr>
+                    <tr><td>Cognitive</td><td>calculate, web_search, wikipedia_search</td><td>Reasoning support</td></tr>
+                    <tr><td>Data</td><td>query_database, call_api, fetch_json, scrape_webpage</td><td>Database and API access</td></tr>
+                    <tr><td>Media</td><td>pdf_to_markdown, analyze_image, summarize_pdf</td><td>File processing</td></tr>
+                    <tr><td>Pi-dev</td><td>pidev_read, pidev_write, pidev_edit, pidev_bash</td><td>Imported via bridge</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 09: TOOL REGISTRY
+         =========================================== -->
+    <section class="slide" data-slide="9">
+        <div class="slide-content">
+            <h2 class="reveal">Tool Registry</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Global singleton. Every <code>@tool</code> auto-registers. Zero manual wiring.</p>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">registry.py</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="syn-keyword">from</span> agent_tooling <span class="syn-keyword">import</span> ToolRegistry</div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># List all tools (including pi-dev imports)</span></div>
+                    <div class="line"><span class="syn-keyword">for</span> tool <span class="syn-keyword">in</span> ToolRegistry.<span class="syn-function">list_tools</span>():</div>
+                    <div class="line">    <span class="syn-function">print</span>(<span class="syn-string">f"{tool['name']}: {tool['description']}"</span>)</div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Get schemas for function calling</span></div>
+                    <div class="line">schemas = ToolRegistry.<span class="syn-function">to_openai_functions</span>()</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 10: TOOL COMPOSITION
+         =========================================== -->
+    <section class="slide" data-slide="10">
+        <div class="slide-content">
+            <h2 class="reveal">Tool Composition</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Build workflows from atomic tools. Sequential, parallel, or pipeline.</p>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">composer.py</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line">research = ToolComposer.<span class="syn-function">sequential</span>(</div>
+                    <div class="line">    <span class="syn-param">name</span>=<span class="syn-string">"research_assistant"</span>,</div>
+                    <div class="line">    <span class="syn-param">tools</span>=[</div>
+                    <div class="line">        ToolStep(<span class="syn-string">"web_search"</span>, <span class="syn-param">output_key</span>=<span class="syn-string">"results"</span>),</div>
+                    <div class="line">        ToolStep(<span class="syn-string">"summarize"</span>, <span class="syn-param">input_mapping</span>={<span class="syn-string">"text"</span>: <span class="syn-string">"results"</span>}),</div>
+                    <div class="line">        ToolStep(<span class="syn-string">"write_file"</span>, <span class="syn-param">input_mapping</span>={<span class="syn-string">"content"</span>: <span class="syn-string">"summary"</span>}),</div>
+                    <div class="line">    ]</div>
+                    <div class="line">)</div>
+                </div>
+            </div>
+            <div class="pipeline reveal" style="margin-top:var(--content-gap);">
+                <div class="pipeline-step">web_search</div>
+                <span class="pipeline-arrow">&rarr;</span>
+                <div class="pipeline-step">summarize</div>
+                <span class="pipeline-arrow">&rarr;</span>
+                <div class="pipeline-step">write_file</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 11: MULTI-PROVIDER LLM
+         =========================================== -->
+    <section class="slide" data-slide="11">
+        <div class="slide-content">
+            <h2 class="reveal">Multi-Provider LLM Support</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Powered by <span class="hl-amber">OpenHands SDK</span>. One syntax, six providers.</p>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">agents/base.py</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="syn-comment"># Local Ollama (default, no API key)</span></div>
+                    <div class="line">agent = BaseAgent(<span class="syn-param">model</span>=<span class="syn-string">"ollama/qwen3-coder"</span>)</div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Anthropic Claude</span></div>
+                    <div class="line">agent = BaseAgent(<span class="syn-param">model</span>=<span class="syn-string">"anthropic/claude-sonnet-4"</span>)</div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># OpenAI, Google, Mistral, Groq...</span></div>
+                    <div class="line">agent = BaseAgent(<span class="syn-param">model</span>=<span class="syn-string">"openai/gpt-4o"</span>)</div>
+                    <div class="line">agent = BaseAgent(<span class="syn-param">model</span>=<span class="syn-string">"groq/llama-3.3-70b"</span>)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 12: PROVIDER TABLE
+         =========================================== -->
+    <section class="slide" data-slide="12">
+        <div class="slide-content">
+            <h2 class="reveal">Supported Providers</h2>
+            <table class="term-table reveal">
+                <thead>
+                    <tr><th>Provider</th><th>Description</th><th>Env Variable</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>ollama/*</td><td>Local Ollama models</td><td>OLLAMA_BASE_URL</td></tr>
+                    <tr><td>anthropic/*</td><td>Anthropic API (Claude)</td><td>ANTHROPIC_API_KEY</td></tr>
+                    <tr><td>openai/*</td><td>OpenAI API (GPT)</td><td>OPENAI_API_KEY</td></tr>
+                    <tr><td>google/*</td><td>Google AI (Gemini)</td><td>GOOGLE_API_KEY</td></tr>
+                    <tr><td>mistral/*</td><td>Mistral AI</td><td>MISTRAL_API_KEY</td></tr>
+                    <tr><td>groq/*</td><td>Groq (fast inference)</td><td>GROQ_API_KEY</td></tr>
+                </tbody>
+            </table>
+            <p class="reveal" style="margin-top:var(--element-gap);">
+                <span class="hl-green">Ollama</span> is the default. No API key needed. Everything runs local.
+            </p>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 13: WORKSPACE ABSTRACTION
+         =========================================== -->
+    <section class="slide" data-slide="13">
+        <div class="slide-content">
+            <h2 class="reveal">Workspace Abstraction</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Three execution environments. Same tool interface.</p>
+            <div class="feature-grid reveal" style="grid-template-columns:repeat(3,1fr);">
+                <div class="feature-card" style="border-top:2px solid var(--terminal-green);">
+                    <h3 style="color:var(--terminal-green);">LocalWorkspace</h3>
+                    <p>In-process execution. Default for development and trusted tools. Zero overhead.</p>
+                    <div style="margin-top:0.5rem;"><span class="tag tag-green">No Isolation</span></div>
+                </div>
+                <div class="feature-card" style="border-top:2px solid var(--accent-amber);">
+                    <h3 style="color:var(--accent-amber);">DockerWorkspace</h3>
+                    <p>Container isolation via OpenHands. For untrusted code and production.</p>
+                    <div style="margin-top:0.5rem;"><span class="tag tag-amber">Full Isolation</span></div>
+                </div>
+                <div class="feature-card" style="border-top:2px solid var(--accent-cyan);">
+                    <h3 style="color:var(--accent-cyan);">RemoteWorkspace</h3>
+                    <p>HTTP to agent-server. Distributed execution across machines.</p>
+                    <div style="margin-top:0.5rem;"><span class="tag tag-cyan">Network Isolated</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 14: DOCKER SANDBOX EXAMPLE
+         =========================================== -->
+    <section class="slide" data-slide="14">
+        <div class="slide-content">
+            <h2 class="reveal">Docker Sandboxing</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Mark tools with <code>sandbox_required=True</code>. They run inside containers automatically.</p>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">sandboxed_tool.py</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="syn-decorator">@tool</span>(<span class="syn-param">name</span>=<span class="syn-string">"run_untrusted"</span>, <span class="syn-param">sandbox_required</span>=<span class="syn-value">True</span>)</div>
+                    <div class="line"><span class="syn-keyword">def</span> <span class="syn-function">run_untrusted</span>(<span class="syn-param">code</span>: <span class="syn-class">str</span>) -> <span class="syn-class">str</span>:</div>
+                    <div class="line">    <span class="syn-function">exec</span>(code)</div>
+                    <div class="line">    <span class="syn-keyword">return</span> <span class="syn-string">"executed"</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Agent with Docker workspace</span></div>
+                    <div class="line">agent = BaseAgent(</div>
+                    <div class="line">    <span class="syn-param">model</span>=<span class="syn-string">"ollama/qwen3-coder"</span>,</div>
+                    <div class="line">    <span class="syn-param">workspace</span>=DockerWorkspace(<span class="syn-param">image</span>=<span class="syn-string">"python:3.12-slim"</span>),</div>
+                    <div class="line">)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 15: PI-DEV BRIDGE
+         =========================================== -->
+    <section class="slide" data-slide="15">
+        <div class="slide-content">
+            <h2 class="reveal">Pi-dev Bridge</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Bidirectional tool exchange. No TypeScript dependencies required.</p>
+            <div class="two-col reveal">
+                <div>
+                    <h3 style="color:var(--terminal-green);">Direction 1: Serve tools TO pi-dev</h3>
+                    <div class="code-block" style="font-size:var(--small-size);">
+                        <div>config = bridge.<span class="syn-function">get_mcp_config</span>()</div>
+                        <div class="syn-comment"># Pi-dev discovers tools via MCP</div>
+                    </div>
+                    <br>
+                    <h3 style="color:var(--accent-amber);">Direction 2: Import pi-dev tools</h3>
+                    <div class="code-block" style="font-size:var(--small-size);">
+                        <div>imported = bridge.<span class="syn-function">consume_pidev_tools</span>()</div>
+                        <div class="syn-comment"># ["pidev_read", "pidev_write", ...]</div>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5rem;">
+                    <div class="arch-box" style="width:100%;">
+                        <h4 style="color:var(--accent-cyan);">Pi-dev (TS/Node)</h4>
+                        <p>read, write, edit, bash</p>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:0.5rem;font-size:var(--small-size);color:var(--dim-green);">
+                        <span>&uarr; MCP</span>
+                        <span>&darr; RPC</span>
+                    </div>
+                    <div class="arch-box active" style="width:100%;">
+                        <h4>Agent Tooling (Python)</h4>
+                        <p>calculate, web_search, etc.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 16: SERVER INTERFACES
+         =========================================== -->
+    <section class="slide" data-slide="16">
+        <div class="slide-content">
+            <h2 class="reveal">Server Interfaces</h2>
+            <div class="feature-grid reveal" style="grid-template-columns:repeat(3,1fr);">
+                <div class="feature-card" style="border-top:2px solid var(--terminal-green);">
+                    <h3 style="color:var(--terminal-green);">REST API</h3>
+                    <p>FastAPI server on port 8082. /tools, /execute, /schemas endpoints.</p>
+                    <div class="code-block" style="margin-top:0.5rem;font-size:clamp(0.5rem,0.8vw,0.7rem);">
+                        <div>curl localhost:8082/tools</div>
+                        <div>curl -X POST /execute</div>
+                    </div>
+                </div>
+                <div class="feature-card" style="border-top:2px solid var(--accent-amber);">
+                    <h3 style="color:var(--accent-amber);">WebSocket</h3>
+                    <p>Real-time agent sessions. Tool execution and streaming results.</p>
+                    <div class="code-block" style="margin-top:0.5rem;font-size:clamp(0.5rem,0.8vw,0.7rem);">
+                        <div>ws://localhost:8082/ws</div>
+                        <div>{type: "message", ...}</div>
+                    </div>
+                </div>
+                <div class="feature-card" style="border-top:2px solid var(--accent-cyan);">
+                    <h3 style="color:var(--accent-cyan);">MCP Server</h3>
+                    <p>Stdio mode. Expose tools to Claude, pi-dev, and any MCP client.</p>
+                    <div class="code-block" style="margin-top:0.5rem;font-size:clamp(0.5rem,0.8vw,0.7rem);">
+                        <div>agent-tooling --mcp</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 17: MODULE MAP
+         =========================================== -->
+    <section class="slide" data-slide="17">
+        <div class="slide-content">
+            <h2 class="reveal">Module Map</h2>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">src/agent_tooling/</span>
+                </div>
+                <div class="terminal-body" style="font-size:var(--small-size);">
+                    <div class="line"><span class="hl-amber">tools/</span>           <span class="syn-comment"># @tool decorator, BaseTool, ToolRegistry</span></div>
+                    <div class="line">  <span class="hl-green">base.py</span>        <span class="syn-comment"># BaseTool, ToolResult, ToolDefinition</span></div>
+                    <div class="line">  <span class="hl-green">decorator.py</span>   <span class="syn-comment"># @tool decorator (FunctionTool)</span></div>
+                    <div class="line">  <span class="hl-green">registry.py</span>    <span class="syn-comment"># Global ToolRegistry singleton</span></div>
+                    <div class="line"><span class="hl-amber">agents/</span>          <span class="syn-comment"># BaseAgent + OllamaAgent</span></div>
+                    <div class="line"><span class="hl-amber">workspace/</span>       <span class="syn-comment"># Local, Docker, Remote</span></div>
+                    <div class="line"><span class="hl-amber">bridges/</span>         <span class="syn-comment"># Pi-dev MCP/RPC bridge</span></div>
+                    <div class="line"><span class="hl-amber">mcp/</span>             <span class="syn-comment"># MCP server + client</span></div>
+                    <div class="line"><span class="hl-green">server.py</span>        <span class="syn-comment"># FastAPI REST + WebSocket</span></div>
+                    <div class="line"><span class="hl-green">interceptor.py</span>   <span class="syn-comment"># Workspace-aware execution router</span></div>
+                    <div class="line"><span class="hl-green">composer.py</span>      <span class="syn-comment"># Sequential, parallel, pipeline</span></div>
+                    <div class="line"><span class="hl-green">cli.py</span>           <span class="syn-comment"># CLI entry point</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 18: TECH STACK
+         =========================================== -->
+    <section class="slide" data-slide="18">
+        <div class="slide-content">
+            <h2 class="reveal">Tech Stack</h2>
+            <div class="two-col reveal">
+                <div>
+                    <h3>Core</h3>
+                    <ul class="term-list">
+                        <li><span class="hl-green">Python 3.10+</span> with type hints</li>
+                        <li><span class="hl-green">Pydantic</span> for ToolResult models</li>
+                        <li><span class="hl-green">FastAPI</span> for HTTP/WebSocket server</li>
+                        <li><span class="hl-green">Rich</span> for terminal UI and dashboards</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Integrations</h3>
+                    <ul class="term-list">
+                        <li><span class="hl-amber">OpenHands SDK</span> for multi-provider LLM</li>
+                        <li><span class="hl-amber">Docker SDK</span> for sandboxed execution</li>
+                        <li><span class="hl-amber">MCP protocol</span> for tool interop</li>
+                        <li><span class="hl-amber">Ollama</span> as default local backend</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 19: INSTALLATION
+         =========================================== -->
+    <section class="slide" data-slide="19">
+        <div class="slide-content">
+            <h2 class="reveal">Installation</h2>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">bash</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="syn-comment"># Core package</span></div>
+                    <div class="line"><span class="prompt" style="color:var(--terminal-green);">pip install agent-tooling-layer</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># With OpenHands multi-provider support</span></div>
+                    <div class="line"><span class="prompt" style="color:var(--terminal-green);">pip install "agent-tooling-layer[openhands]"</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Docker sandboxing</span></div>
+                    <div class="line"><span class="prompt" style="color:var(--terminal-green);">pip install "agent-tooling-layer[docker]"</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Everything</span></div>
+                    <div class="line"><span class="prompt" style="color:var(--terminal-green);">pip install "agent-tooling-layer[all]"</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 20: CLI REFERENCE
+         =========================================== -->
+    <section class="slide" data-slide="20">
+        <div class="slide-content">
+            <h2 class="reveal">CLI Reference</h2>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">bash</span>
+                </div>
+                <div class="terminal-body" style="font-size:var(--small-size);">
+                    <div class="line"><span class="syn-comment"># Chat with any provider</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --chat</span>                     <span class="syn-comment"># default: ollama</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --chat --model anthropic/claude-sonnet-4</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --chat --workspace docker</span>   <span class="syn-comment"># sandboxed</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Tool management</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --list</span>        <span class="syn-comment"># list all tools</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --schemas</span>     <span class="syn-comment"># JSON schemas</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --arena</span>       <span class="syn-comment"># compare tools</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Integrations</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --bridge pidev</span> <span class="syn-comment"># import pi-dev tools</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --mcp</span>         <span class="syn-comment"># start MCP server</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 21: EXECUTION FLOW
+         =========================================== -->
+    <section class="slide" data-slide="21">
+        <div class="slide-content">
+            <h2 class="reveal">How Tool Execution Works</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">The <span class="hl-amber">ToolingInterceptor</span> routes calls from any source through the right workspace.</p>
+            <div class="reveal" style="display:flex;flex-direction:column;align-items:center;gap:clamp(0.3rem,0.5vw,0.5rem);max-width:min(85vw,700px);margin:0 auto;">
+                <div style="display:flex;gap:clamp(0.5rem,1vw,1rem);justify-content:center;flex-wrap:wrap;">
+                    <div class="pipeline-step">Direct Python</div>
+                    <div class="pipeline-step">OpenAI Format</div>
+                    <div class="pipeline-step">ReAct/XML Parse</div>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-box active" style="width:70%;">
+                    <h4>ToolingInterceptor</h4>
+                    <p>Unified execution router + trace logging</p>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-box" style="width:70%;">
+                    <h4>ToolRegistry</h4>
+                    <p>Lookup by name &rarr; validate params &rarr; execute</p>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div style="display:flex;gap:clamp(0.3rem,0.8vw,0.8rem);justify-content:center;flex-wrap:wrap;">
+                    <div class="pipeline-step" style="border-color:var(--terminal-green);">LocalWorkspace</div>
+                    <div class="pipeline-step" style="border-color:var(--accent-amber);">DockerWorkspace</div>
+                    <div class="pipeline-step" style="border-color:var(--accent-cyan);">RemoteWorkspace</div>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-box" style="width:50%;">
+                    <h4 style="color:var(--accent-amber);">ToolResult</h4>
+                    <p>success, data, error, execution_time_ms</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 22: ADDING CUSTOM TOOLS
+         =========================================== -->
+    <section class="slide" data-slide="22">
+        <div class="slide-content">
+            <h2 class="reveal">Adding Custom Tools</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Create the function. Decorate it. It's available everywhere, instantly.</p>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">tools/custom/my_tool.py</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="syn-decorator">@tool</span>(<span class="syn-param">name</span>=<span class="syn-string">"my_tool"</span>, <span class="syn-param">category</span>=<span class="syn-string">"custom"</span>,</div>
+                    <div class="line">      <span class="syn-param">mcp_enabled</span>=<span class="syn-value">True</span>, <span class="syn-param">sandbox_required</span>=<span class="syn-value">False</span>)</div>
+                    <div class="line"><span class="syn-keyword">def</span> <span class="syn-function">my_tool</span>(<span class="syn-param">param1</span>: <span class="syn-class">str</span>, <span class="syn-param">param2</span>: <span class="syn-class">int</span> = <span class="syn-value">0</span>) -> <span class="syn-class">dict</span>:</div>
+                    <div class="line">    <span class="syn-string">"""Description of what this tool does."""</span></div>
+                    <div class="line">    <span class="syn-keyword">return</span> {<span class="syn-string">"result"</span>: <span class="syn-string">f"Processed {param1}"</span>}</div>
+                </div>
+            </div>
+            <p class="reveal" style="margin-top:var(--element-gap);font-size:var(--small-size);color:var(--text-dim);">
+                Available in: <span class="hl-green">Registry</span> &bull; <span class="hl-amber">MCP Server</span> &bull; <span class="hl-cyan">HTTP API</span> &bull; Agent Sessions
+            </p>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 23: DEMO MODE
+         =========================================== -->
+    <section class="slide" data-slide="23">
+        <div class="slide-content">
+            <h2 class="reveal">Demo Mode</h2>
+            <p class="reveal" style="margin-bottom:var(--content-gap);">Try tools safely. Progressively enable capabilities.</p>
+            <div class="terminal-window reveal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">bash</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="syn-comment"># Safe tools only (calculator, etc.)</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --demo</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Include network tools</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --demo --demo-network</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Include Ollama tools</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --demo --demo-ollama</span></div>
+                    <div class="line"></div>
+                    <div class="line"><span class="syn-comment"># Run everything</span></div>
+                    <div class="line"><span class="hl-green">agent-tooling --demo --demo-all</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 24: ROADMAP
+         =========================================== -->
+    <section class="slide" data-slide="24">
+        <div class="slide-content">
+            <h2 class="reveal">Roadmap</h2>
+            <div class="two-col reveal">
+                <div>
+                    <h3>Next Up</h3>
+                    <ul class="term-list">
+                        <li>Additional tool categories (communication, media)</li>
+                        <li>Persistent agent sessions with state</li>
+                        <li>Streaming tool results via WebSocket</li>
+                        <li>Remote workspace auth + TLS</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Long Term</h3>
+                    <ul class="term-list">
+                        <li>Multi-agent orchestration layer</li>
+                        <li>Tool marketplace and sharing</li>
+                        <li>Observability dashboard (traces, metrics)</li>
+                        <li>Plugin system for third-party tools</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===========================================
+         SLIDE 25: CLOSING
+         =========================================== -->
+    <section class="slide closing-slide" data-slide="25">
+        <div class="slide-content">
+            <h1 class="reveal glow" style="font-size:var(--h2-size);">agent-tooling<span class="cursor"></span></h1>
+            <div class="divider reveal" style="margin:var(--element-gap) auto;"></div>
+            <p class="reveal subtitle" style="max-width:min(70vw,500px);">Any LLM provider. Any execution environment. Any agent harness.</p>
+            <div class="reveal" style="display:flex;gap:clamp(0.5rem,1vw,1rem);margin-top:var(--content-gap);flex-wrap:wrap;justify-content:center;">
+                <span class="tag tag-green">pip install agent-tooling-layer</span>
+            </div>
+            <div class="reveal" style="display:flex;gap:clamp(0.5rem,1.5vw,1.5rem);margin-top:var(--content-gap);flex-wrap:wrap;justify-content:center;">
+                <span style="font-size:var(--small-size);color:var(--text-dim);">GitHub: <span class="hl-green">jasperan/agent-tooling</span></span>
+                <span style="font-size:var(--small-size);color:var(--text-dim);">PyPI: <span class="hl-amber">agent-tooling-layer</span></span>
+                <span style="font-size:var(--small-size);color:var(--text-dim);">License: <span class="hl-cyan">MIT</span></span>
+            </div>
+        </div>
+        <span class="wrench-deco" style="top:1rem;left:1rem;transform:rotate(-20deg);">&#128295;</span>
+    </section>
+
+    <!-- ===========================================
+       SLIDE PRESENTATION CONTROLLER
+       =========================================== -->
+    <script>
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.totalSlides = this.slides.length;
+                this.isScrolling = false;
+
+                this.updateCounter();
+                this.setupIntersectionObserver();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupProgressBar();
+                this.setupNavDots();
+            }
+
+            /* --- Intersection Observer --- */
+            setupIntersectionObserver() {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                            const idx = Array.from(this.slides).indexOf(entry.target);
+                            if (idx !== -1) {
+                                this.currentSlide = idx;
+                                this.updateCounter();
+                                this.updateProgressBar();
+                                this.updateNavDots();
+                            }
+                        }
+                    });
+                }, { threshold: 0.5 });
+
+                this.slides.forEach(slide => observer.observe(slide));
+            }
+
+            /* --- Keyboard Navigation --- */
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowDown':
+                        case 'ArrowRight':
+                        case ' ':
+                        case 'PageDown':
+                            e.preventDefault();
+                            this.goToSlide(this.currentSlide + 1);
+                            break;
+                        case 'ArrowUp':
+                        case 'ArrowLeft':
+                        case 'PageUp':
+                            e.preventDefault();
+                            this.goToSlide(this.currentSlide - 1);
+                            break;
+                        case 'Home':
+                            e.preventDefault();
+                            this.goToSlide(0);
+                            break;
+                        case 'End':
+                            e.preventDefault();
+                            this.goToSlide(this.totalSlides - 1);
+                            break;
+                    }
+                });
+            }
+
+            /* --- Touch/Swipe Navigation --- */
+            setupTouchNav() {
+                let touchStartY = 0;
+                let touchStartX = 0;
+
+                document.addEventListener('touchstart', (e) => {
+                    touchStartY = e.touches[0].clientY;
+                    touchStartX = e.touches[0].clientX;
+                }, { passive: true });
+
+                document.addEventListener('touchend', (e) => {
+                    const deltaY = touchStartY - e.changedTouches[0].clientY;
+                    const deltaX = touchStartX - e.changedTouches[0].clientX;
+
+                    // Only act on vertical swipes that are bigger than horizontal
+                    if (Math.abs(deltaY) > 50 && Math.abs(deltaY) > Math.abs(deltaX)) {
+                        if (deltaY > 0) {
+                            this.goToSlide(this.currentSlide + 1);
+                        } else {
+                            this.goToSlide(this.currentSlide - 1);
+                        }
+                    }
+                }, { passive: true });
+            }
+
+            /* --- Progress Bar --- */
+            setupProgressBar() {
+                this.progressBar = document.getElementById('progressBar');
+                this.updateProgressBar();
+
+                document.addEventListener('scroll', () => {
+                    this.updateProgressBar();
+                }, { passive: true });
+            }
+
+            updateProgressBar() {
+                if (!this.progressBar) return;
+                const progress = ((this.currentSlide + 1) / this.totalSlides) * 100;
+                this.progressBar.style.width = progress + '%';
+            }
+
+            /* --- Nav Dots --- */
+            setupNavDots() {
+                const nav = document.getElementById('navDots');
+                if (!nav) return;
+
+                this.slides.forEach((_, i) => {
+                    const dot = document.createElement('button');
+                    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+                    dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+                    dot.addEventListener('click', () => this.goToSlide(i));
+                    nav.appendChild(dot);
+                });
+            }
+
+            updateNavDots() {
+                const dots = document.querySelectorAll('.nav-dot');
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === this.currentSlide);
+                });
+            }
+
+            /* --- Slide Counter --- */
+            updateCounter() {
+                const counter = document.getElementById('slideCounter');
+                if (!counter) return;
+                const current = counter.querySelector('.current');
+                if (current) {
+                    current.textContent = String(this.currentSlide + 1).padStart(2, '0');
+                }
+            }
+
+            /* --- Navigate to Slide --- */
+            goToSlide(index) {
+                if (index < 0 || index >= this.totalSlides) return;
+                this.slides[index].scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            new SlidePresentation();
+        });
+    </script>
+</body>
+</html>
