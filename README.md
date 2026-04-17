@@ -33,7 +33,7 @@
 
 Transform agent decisions into actions. Unified tool abstractions with **multi-provider LLM support** via [OpenHands](https://github.com/OpenHands/OpenHands), **sandboxed Docker execution**, and **bidirectional interop** with [pi-dev](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) coding agent.
 
-> **"Any LLM provider. Any execution environment. Any agent harness."**
+> **"Any LLM provider. Any execution environment. Any agent runtime."**
 
 ---
 
@@ -43,17 +43,17 @@ Most tool-calling frameworks lock you into one LLM provider and run everything o
 
 | Problem | Agent Tooling Solution |
 |---------|----------------------|
-| Locked into one LLM provider | **Multi-provider agent** powered by OpenHands — Ollama, Anthropic, OpenAI, Google, Mistral, Groq |
-| Tools run unsandboxed on host | **Workspace abstraction** — Local, Docker, or Remote execution environments |
-| No interop between agent systems | **Pi-dev bridge** — bidirectional MCP/RPC protocol exchange |
-| Rigid tool definitions | **`@tool` decorator** — one definition, auto-generates OpenAI + MCP schemas |
+| Locked into one LLM provider | **Multi-provider agent** powered by OpenHands (Ollama, Anthropic, OpenAI, Google, Mistral, Groq) |
+| Tools run unsandboxed on host | **Workspace abstraction** (Local, Docker, or Remote execution environments) |
+| No interop between agent systems | **Pi-dev bridge** for bidirectional MCP/RPC protocol exchange |
+| Rigid tool definitions | **`@tool` decorator**. One definition, auto-generates OpenAI + MCP schemas |
 
 ---
 
 ## Quick Start
 
 <!-- one-command-install -->
-> **One-command install** — clone, configure, and run in a single step:
+> **One-command install** (clone, configure, and run in a single step):
 >
 > ```bash
 > curl -fsSL https://raw.githubusercontent.com/jasperan/agent-tooling/main/install.sh | bash
@@ -255,7 +255,7 @@ ws = RemoteWorkspace(server_url="http://agent-server:3000")
 
 ## Pi-dev Bridge
 
-[Pi-dev](https://buildwithpi.ai/) is a minimal terminal-based coding agent. Agent Tooling connects to it via **MCP and RPC protocols** — no TypeScript dependencies required.
+[Pi-dev](https://buildwithpi.ai/) is a minimal terminal-based coding agent. Agent Tooling connects to it via **MCP and RPC protocols**, no TypeScript dependencies required.
 
 ### Bidirectional Tool Exchange
 
@@ -306,7 +306,7 @@ Pi-dev (TypeScript/Node)              Agent-Tooling (Python)
 
 ### `@tool` Decorator
 
-Define tools once, use them everywhere — direct Python, OpenAI function calling, and MCP:
+Define tools once, use them everywhere (direct Python, OpenAI function calling, and MCP):
 
 ```python
 from agent_tooling import tool, ToolError
@@ -521,8 +521,8 @@ src/agent_tooling/
 │   ├── registry.py           # Global ToolRegistry singleton
 │   └── <categories>/         # developer, cognitive, data, media
 ├── agents/
-│   ├── base.py               # BaseAgent — multi-provider via OpenHands
-│   └── ollama.py             # OllamaAgent — thin BaseAgent wrapper
+│   ├── base.py               # BaseAgent (multi-provider via OpenHands)
+│   └── ollama.py             # OllamaAgent (thin BaseAgent wrapper)
 ├── workspace/                 # Execution environments
 │   ├── base.py               # Abstract Workspace + CommandResult
 │   ├── local.py              # LocalWorkspace (in-process, default)
@@ -616,10 +616,10 @@ The tool is immediately available in the registry, MCP server, HTTP API, and any
 
 ## Related Projects
 
-- [OpenHands](https://github.com/OpenHands/OpenHands) — Open platform for AI software developers
-- [Pi-dev](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — Minimal terminal coding agent
-- [Agent Stack Whitepaper](https://github.com/jasperan/agent-stack-whitepaper) — Conceptual architecture
-- [agent-reasoning](https://github.com/jasperan/agent-reasoning) — The Reasoning Layer
+- [OpenHands](https://github.com/OpenHands/OpenHands). Open platform for AI software developers
+- [Pi-dev](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent). Minimal terminal coding agent
+- [Agent Stack Whitepaper](https://github.com/jasperan/agent-stack-whitepaper). Conceptual architecture
+- [agent-reasoning](https://github.com/jasperan/agent-reasoning). The Reasoning Layer
 
 ---
 

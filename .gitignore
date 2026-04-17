@@ -161,6 +161,14 @@ progress.md
 .mcp*.json
 mcp.json
 
+# Other agent / skill directories
+.agents/
+.crush/
+.openhands/
+
+# Generated content (local only)
+content/
+
 # Agent session logs
 sessions/
 *.session.json
