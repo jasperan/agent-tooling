@@ -51,9 +51,8 @@ class OllamaAgent(BaseAgent):
         if "/" not in resolved_model:
             resolved_model = f"ollama/{resolved_model}"
 
-        # Set Ollama base URL if provided
-        if base_url:
-            os.environ["OLLAMA_BASE_URL"] = base_url
+        # Resolve base URL, passing it through explicitly instead of mutating os.environ
+        resolved_base_url = base_url or os.environ.get("OLLAMA_BASE_URL", DEFAULT_BASE_URL)
 
         super().__init__(
             model=resolved_model,
@@ -63,7 +62,8 @@ class OllamaAgent(BaseAgent):
             logger=logger,
             console=console,
             verbose=verbose,
+            base_url=resolved_base_url,
         )
 
         # Expose base_url for backward compat
-        self.base_url = base_url or os.environ.get("OLLAMA_BASE_URL", DEFAULT_BASE_URL)
+        self.base_url = resolved_base_url

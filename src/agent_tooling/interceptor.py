@@ -8,11 +8,10 @@ unified interface for executing tools, whether they come from:
 - MCP protocol requests
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 import json
-import re
 
-from agent_tooling.tools.base import BaseTool, ToolResult, ToolError
+from agent_tooling.tools.base import ToolResult
 from agent_tooling.tools.registry import ToolRegistry
 from agent_tooling.workspace.base import Workspace
 from agent_tooling.workspace.local import LocalWorkspace
@@ -136,49 +135,6 @@ class ToolingInterceptor:
         """
         function = tool_call.get("function", {})
         return self.execute_function_call(function)
-
-    def parse_and_execute(self, text: str) -> List[ToolResult]:
-        """
-        Parse tool calls from text and execute them.
-
-        Supports various formats:
-        - Action: tool_name[arguments]  (ReAct format)
-        - <tool>tool_name</tool><args>{"key": "value"}</args>  (XML format)
-        - ```tool\n{"name": "...", "arguments": {...}}\n```  (Markdown format)
-
-        Args:
-            text: Text potentially containing tool calls
-
-        Returns:
-            List of ToolResults from executed tools
-        """
-        results = []
-
-        # ReAct format: Action: tool_name[arguments]
-        react_pattern = r'Action:\s*(\w+)\[([^\]]*)\]'
-        for match in re.finditer(react_pattern, text):
-            tool_name = match.group(1)
-            args_str = match.group(2)
-
-            # Try to parse as JSON, otherwise use as single argument
-            try:
-                args = json.loads(args_str) if args_str.startswith("{") else {"input": args_str}
-            except json.JSONDecodeError:
-                args = {"input": args_str}
-
-            results.append(self.execute(tool_name, args))
-
-        # XML format: <tool>name</tool><args>{...}</args>
-        xml_pattern = r'<tool>(\w+)</tool>\s*<args>({[^}]+})</args>'
-        for match in re.finditer(xml_pattern, text):
-            tool_name = match.group(1)
-            try:
-                args = json.loads(match.group(2))
-            except json.JSONDecodeError:
-                args = {}
-            results.append(self.execute(tool_name, args))
-
-        return results
 
     def get_available_tools(self) -> List[Dict[str, Any]]:
         """Get list of all available tools."""

@@ -3,6 +3,7 @@
 Requires: pip install agent-tooling-layer[docker]
 """
 
+import base64
 import shlex
 from agent_tooling.workspace.base import Workspace, CommandResult
 from agent_tooling.tools.base import BaseTool, ToolResult
@@ -80,12 +81,14 @@ class DockerWorkspace(Workspace):
         return result.stdout
 
     def write_file(self, path: str, content: str) -> None:
-        """Write file to container filesystem."""
+        """Write file to container filesystem.
+
+        Content is base64-encoded before transport so arbitrary bytes
+        (quotes, heredoc delimiters, newlines) survive the shell intact.
+        """
         self._ensure_container()
-        escaped = content.replace("'", "'\\''")
-        self.run_command(
-            f"cat > {shlex.quote(path)} << 'AGENT_TOOLING_EOF'\n{escaped}\nAGENT_TOOLING_EOF"
-        )
+        encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
+        self.run_command(f"echo {shlex.quote(encoded)} | base64 -d > {shlex.quote(path)}")
 
     def cleanup(self):
         """Stop and remove the container."""

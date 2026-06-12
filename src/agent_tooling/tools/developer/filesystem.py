@@ -2,15 +2,14 @@
 File System Tools - Read, write, and navigate the file system.
 """
 
-import os
 import re
 import shutil
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 
 from agent_tooling.tools.decorator import tool
-from agent_tooling.tools.base import ToolResult, ToolError
+from agent_tooling.tools.base import ToolError
 
 SAMPLES = {
     "read_file": [
@@ -110,22 +109,16 @@ def read_file(path: str, encoding: str = "utf-8") -> str:
     Returns:
         The contents of the file as a string
     """
-    try:
-        file_path = Path(path).expanduser().resolve()
+    file_path = Path(path).expanduser().resolve()
 
-        if not file_path.exists():
-            raise ToolError(f"File not found: {path}", tool_name="read_file")
+    if not file_path.exists():
+        raise ToolError(f"File not found: {path}", tool_name="read_file")
 
-        if not file_path.is_file():
-            raise ToolError(f"Not a file: {path}", tool_name="read_file")
+    if not file_path.is_file():
+        raise ToolError(f"Not a file: {path}", tool_name="read_file")
 
-        with open(file_path, "r", encoding=encoding) as f:
-            return f.read()
-
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="read_file")
+    with open(file_path, "r", encoding=encoding) as f:
+        return f.read()
 
 
 @tool(name="write_file", category="developer", mcp_enabled=True)
@@ -140,23 +133,19 @@ def write_file(path: str, content: str, encoding: str = "utf-8") -> dict:
     Returns:
         Dictionary with file path and bytes written
     """
-    try:
-        file_path = Path(path).expanduser().resolve()
+    file_path = Path(path).expanduser().resolve()
 
-        # Create parent directories if needed
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+    # Create parent directories if needed
+    file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(file_path, "w", encoding=encoding) as f:
-            bytes_written = f.write(content)
+    with open(file_path, "w", encoding=encoding) as f:
+        bytes_written = f.write(content)
 
-        return {
-            "path": str(file_path),
-            "bytes_written": bytes_written,
-            "success": True,
-        }
-
-    except Exception as e:
-        raise ToolError(str(e), tool_name="write_file")
+    return {
+        "path": str(file_path),
+        "bytes_written": bytes_written,
+        "success": True,
+    }
 
 
 @tool(name="list_directory", category="developer", mcp_enabled=True)
@@ -175,45 +164,39 @@ def list_directory(
     Returns:
         List of file/directory information dictionaries
     """
-    try:
-        dir_path = Path(path).expanduser().resolve()
+    dir_path = Path(path).expanduser().resolve()
 
-        if not dir_path.exists():
-            raise ToolError(f"Directory not found: {path}", tool_name="list_directory")
+    if not dir_path.exists():
+        raise ToolError(f"Directory not found: {path}", tool_name="list_directory")
 
-        if not dir_path.is_dir():
-            raise ToolError(f"Not a directory: {path}", tool_name="list_directory")
+    if not dir_path.is_dir():
+        raise ToolError(f"Not a directory: {path}", tool_name="list_directory")
 
-        if recursive:
-            items = list(dir_path.rglob(pattern))
-        else:
-            items = list(dir_path.glob(pattern))
+    if recursive:
+        items = list(dir_path.rglob(pattern))
+    else:
+        items = list(dir_path.glob(pattern))
 
-        results = []
-        for item in sorted(items):
-            try:
-                stat = item.stat()
-                results.append({
-                    "name": item.name,
-                    "path": str(item),
-                    "is_file": item.is_file(),
-                    "is_dir": item.is_dir(),
-                    "size": stat.st_size if item.is_file() else None,
-                    "modified": stat.st_mtime,
-                })
-            except (PermissionError, OSError):
-                results.append({
-                    "name": item.name,
-                    "path": str(item),
-                    "error": "Permission denied",
-                })
+    results = []
+    for item in sorted(items):
+        try:
+            stat = item.stat()
+            results.append({
+                "name": item.name,
+                "path": str(item),
+                "is_file": item.is_file(),
+                "is_dir": item.is_dir(),
+                "size": stat.st_size if item.is_file() else None,
+                "modified": stat.st_mtime,
+            })
+        except (PermissionError, OSError):
+            results.append({
+                "name": item.name,
+                "path": str(item),
+                "error": "Permission denied",
+            })
 
-        return results
-
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="list_directory")
+    return results
 
 
 @tool(name="file_exists", category="developer", mcp_enabled=True)
@@ -226,18 +209,14 @@ def file_exists(path: str) -> dict:
     Returns:
         Dictionary with existence and type information
     """
-    try:
-        file_path = Path(path).expanduser().resolve()
+    file_path = Path(path).expanduser().resolve()
 
-        return {
-            "path": str(file_path),
-            "exists": file_path.exists(),
-            "is_file": file_path.is_file() if file_path.exists() else False,
-            "is_dir": file_path.is_dir() if file_path.exists() else False,
-        }
-
-    except Exception as e:
-        raise ToolError(str(e), tool_name="file_exists")
+    return {
+        "path": str(file_path),
+        "exists": file_path.exists(),
+        "is_file": file_path.is_file() if file_path.exists() else False,
+        "is_dir": file_path.is_dir() if file_path.exists() else False,
+    }
 
 
 @tool(name="edit_file", category="developer", mcp_enabled=True)
@@ -254,62 +233,55 @@ def edit_file(path: str, edits: List[dict]) -> dict:
     Returns:
         Dictionary with edit results
     """
-    try:
-        file_path = Path(path).expanduser().resolve()
+    file_path = Path(path).expanduser().resolve()
 
-        if not file_path.exists():
-            raise ToolError(f"File not found: {path}", tool_name="edit_file")
+    if not file_path.exists():
+        raise ToolError(f"File not found: {path}", tool_name="edit_file")
 
-        if not file_path.is_file():
-            raise ToolError(f"Not a file: {path}", tool_name="edit_file")
+    if not file_path.is_file():
+        raise ToolError(f"Not a file: {path}", tool_name="edit_file")
 
-        # Read current content
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
+    # Read current content
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
 
-        original_content = content
-        edits_applied = []
+    edits_applied = []
 
-        for i, edit in enumerate(edits):
-            if "old_text" not in edit or "new_text" not in edit:
-                raise ToolError(
-                    f"Edit {i} missing 'old_text' or 'new_text'",
-                    tool_name="edit_file"
-                )
+    for i, edit in enumerate(edits):
+        if "old_text" not in edit or "new_text" not in edit:
+            raise ToolError(
+                f"Edit {i} missing 'old_text' or 'new_text'",
+                tool_name="edit_file"
+            )
 
-            old_text = edit["old_text"]
-            new_text = edit["new_text"]
+        old_text = edit["old_text"]
+        new_text = edit["new_text"]
 
-            if old_text not in content:
-                edits_applied.append({
-                    "index": i,
-                    "success": False,
-                    "reason": "old_text not found in file",
-                })
-                continue
-
-            content = content.replace(old_text, new_text, 1)
+        if old_text not in content:
             edits_applied.append({
                 "index": i,
-                "success": True,
-                "old_text_preview": old_text[:50] + "..." if len(old_text) > 50 else old_text,
+                "success": False,
+                "reason": "old_text not found in file",
             })
+            continue
 
-        # Write updated content
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        content = content.replace(old_text, new_text, 1)
+        edits_applied.append({
+            "index": i,
+            "success": True,
+            "old_text_preview": old_text[:50] + "..." if len(old_text) > 50 else old_text,
+        })
 
-        return {
-            "path": str(file_path),
-            "edits_applied": edits_applied,
-            "total_edits": len(edits),
-            "successful_edits": sum(1 for e in edits_applied if e["success"]),
-        }
+    # Write updated content
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
 
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="edit_file")
+    return {
+        "path": str(file_path),
+        "edits_applied": edits_applied,
+        "total_edits": len(edits),
+        "successful_edits": sum(1 for e in edits_applied if e["success"]),
+    }
 
 
 @tool(name="search_files", category="developer", mcp_enabled=True)
@@ -332,63 +304,57 @@ def search_files(
     Returns:
         List of matches with file path, line number, and content
     """
-    try:
-        search_path = Path(path).expanduser().resolve()
+    search_path = Path(path).expanduser().resolve()
 
-        if not search_path.exists():
-            raise ToolError(f"Path not found: {path}", tool_name="search_files")
+    if not search_path.exists():
+        raise ToolError(f"Path not found: {path}", tool_name="search_files")
 
-        if regex:
-            try:
-                compiled_pattern = re.compile(pattern)
-            except re.error as e:
-                raise ToolError(f"Invalid regex: {e}", tool_name="search_files")
-        else:
-            compiled_pattern = None
+    if regex:
+        try:
+            compiled_pattern = re.compile(pattern)
+        except re.error as e:
+            raise ToolError(f"Invalid regex: {e}", tool_name="search_files")
+    else:
+        compiled_pattern = None
 
-        results = []
+    results = []
 
-        # Get files to search
-        if search_path.is_file():
-            files = [search_path]
-        else:
-            files = list(search_path.rglob(include_glob))
+    # Get files to search
+    if search_path.is_file():
+        files = [search_path]
+    else:
+        files = list(search_path.rglob(include_glob))
 
-        for file_path in files:
-            if not file_path.is_file():
-                continue
+    for file_path in files:
+        if not file_path.is_file():
+            continue
 
-            try:
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                    for line_num, line in enumerate(f, 1):
-                        match_found = False
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line_num, line in enumerate(f, 1):
+                    match_found = False
 
-                        if regex:
-                            if compiled_pattern.search(line):
-                                match_found = True
-                        else:
-                            if pattern in line:
-                                match_found = True
+                    if regex:
+                        if compiled_pattern.search(line):
+                            match_found = True
+                    else:
+                        if pattern in line:
+                            match_found = True
 
-                        if match_found:
-                            results.append({
-                                "file": str(file_path),
-                                "line": line_num,
-                                "content": line.rstrip(),
-                            })
+                    if match_found:
+                        results.append({
+                            "file": str(file_path),
+                            "line": line_num,
+                            "content": line.rstrip(),
+                        })
 
-                            if len(results) >= max_results:
-                                return results
+                        if len(results) >= max_results:
+                            return results
 
-            except (PermissionError, OSError):
-                continue
+        except (PermissionError, OSError):
+            continue
 
-        return results
-
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="search_files")
+    return results
 
 
 @tool(name="create_directory", category="developer", mcp_enabled=True)
@@ -401,26 +367,22 @@ def create_directory(path: str) -> dict:
     Returns:
         Dictionary with creation result
     """
-    try:
-        dir_path = Path(path).expanduser().resolve()
+    dir_path = Path(path).expanduser().resolve()
 
-        if dir_path.exists():
-            return {
-                "path": str(dir_path),
-                "created": False,
-                "reason": "already exists",
-                "is_dir": dir_path.is_dir(),
-            }
-
-        dir_path.mkdir(parents=True, exist_ok=True)
-
+    if dir_path.exists():
         return {
             "path": str(dir_path),
-            "created": True,
+            "created": False,
+            "reason": "already exists",
+            "is_dir": dir_path.is_dir(),
         }
 
-    except Exception as e:
-        raise ToolError(str(e), tool_name="create_directory")
+    dir_path.mkdir(parents=True, exist_ok=True)
+
+    return {
+        "path": str(dir_path),
+        "created": True,
+    }
 
 
 @tool(name="delete_path", category="developer", mcp_enabled=True)
@@ -434,50 +396,44 @@ def delete_path(path: str, recursive: bool = False) -> dict:
     Returns:
         Dictionary with deletion result
     """
-    try:
-        target_path = Path(path).expanduser().resolve()
+    target_path = Path(path).expanduser().resolve()
 
-        if not target_path.exists():
-            raise ToolError(f"Path not found: {path}", tool_name="delete_path")
+    if not target_path.exists():
+        raise ToolError(f"Path not found: {path}", tool_name="delete_path")
 
-        if target_path.is_file():
-            target_path.unlink()
+    if target_path.is_file():
+        target_path.unlink()
+        return {
+            "path": str(target_path),
+            "deleted": True,
+            "type": "file",
+        }
+
+    if target_path.is_dir():
+        if recursive:
+            shutil.rmtree(target_path)
             return {
                 "path": str(target_path),
                 "deleted": True,
-                "type": "file",
+                "type": "directory",
+                "recursive": True,
             }
-
-        if target_path.is_dir():
-            if recursive:
-                shutil.rmtree(target_path)
+        else:
+            # Try to remove empty directory
+            try:
+                target_path.rmdir()
                 return {
                     "path": str(target_path),
                     "deleted": True,
                     "type": "directory",
-                    "recursive": True,
                 }
-            else:
-                # Try to remove empty directory
-                try:
-                    target_path.rmdir()
-                    return {
-                        "path": str(target_path),
-                        "deleted": True,
-                        "type": "directory",
-                    }
-                except OSError:
-                    raise ToolError(
-                        f"Directory not empty. Use recursive=true to delete: {path}",
-                        tool_name="delete_path"
-                    )
+            except OSError:
+                raise ToolError(
+                    f"Directory not empty. Use recursive=true to delete: {path}",
+                    tool_name="delete_path"
+                )
 
-        raise ToolError(f"Unknown path type: {path}", tool_name="delete_path")
-
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="delete_path")
+    raise ToolError(f"Unknown path type: {path}", tool_name="delete_path")
 
 
 @tool(name="move_path", category="developer", mcp_enabled=True)
@@ -491,28 +447,22 @@ def move_path(source: str, destination: str) -> dict:
     Returns:
         Dictionary with move result
     """
-    try:
-        src_path = Path(source).expanduser().resolve()
-        dst_path = Path(destination).expanduser().resolve()
+    src_path = Path(source).expanduser().resolve()
+    dst_path = Path(destination).expanduser().resolve()
 
-        if not src_path.exists():
-            raise ToolError(f"Source not found: {source}", tool_name="move_path")
+    if not src_path.exists():
+        raise ToolError(f"Source not found: {source}", tool_name="move_path")
 
-        # Create parent directories if needed
-        dst_path.parent.mkdir(parents=True, exist_ok=True)
+    # Create parent directories if needed
+    dst_path.parent.mkdir(parents=True, exist_ok=True)
 
-        shutil.move(str(src_path), str(dst_path))
+    shutil.move(str(src_path), str(dst_path))
 
-        return {
-            "source": str(src_path),
-            "destination": str(dst_path),
-            "success": True,
-        }
-
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="move_path")
+    return {
+        "source": str(src_path),
+        "destination": str(dst_path),
+        "success": True,
+    }
 
 
 @tool(name="copy_path", category="developer", mcp_enabled=True)
@@ -527,47 +477,41 @@ def copy_path(source: str, destination: str, recursive: bool = True) -> dict:
     Returns:
         Dictionary with copy result
     """
-    try:
-        src_path = Path(source).expanduser().resolve()
-        dst_path = Path(destination).expanduser().resolve()
+    src_path = Path(source).expanduser().resolve()
+    dst_path = Path(destination).expanduser().resolve()
 
-        if not src_path.exists():
-            raise ToolError(f"Source not found: {source}", tool_name="copy_path")
+    if not src_path.exists():
+        raise ToolError(f"Source not found: {source}", tool_name="copy_path")
 
-        # Create parent directories if needed
-        dst_path.parent.mkdir(parents=True, exist_ok=True)
+    # Create parent directories if needed
+    dst_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if src_path.is_file():
-            shutil.copy2(str(src_path), str(dst_path))
+    if src_path.is_file():
+        shutil.copy2(str(src_path), str(dst_path))
+        return {
+            "source": str(src_path),
+            "destination": str(dst_path),
+            "type": "file",
+            "success": True,
+        }
+
+    if src_path.is_dir():
+        if recursive:
+            shutil.copytree(str(src_path), str(dst_path))
             return {
                 "source": str(src_path),
                 "destination": str(dst_path),
-                "type": "file",
+                "type": "directory",
+                "recursive": True,
                 "success": True,
             }
+        else:
+            raise ToolError(
+                f"Source is a directory. Use recursive=true to copy: {source}",
+                tool_name="copy_path"
+            )
 
-        if src_path.is_dir():
-            if recursive:
-                shutil.copytree(str(src_path), str(dst_path))
-                return {
-                    "source": str(src_path),
-                    "destination": str(dst_path),
-                    "type": "directory",
-                    "recursive": True,
-                    "success": True,
-                }
-            else:
-                raise ToolError(
-                    f"Source is a directory. Use recursive=true to copy: {source}",
-                    tool_name="copy_path"
-                )
-
-        raise ToolError(f"Unknown path type: {source}", tool_name="copy_path")
-
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="copy_path")
+    raise ToolError(f"Unknown path type: {source}", tool_name="copy_path")
 
 
 @tool(name="get_file_info", category="developer", mcp_enabled=True)
@@ -580,39 +524,33 @@ def get_file_info(path: str) -> dict:
     Returns:
         Dictionary with file metadata
     """
-    try:
-        file_path = Path(path).expanduser().resolve()
+    file_path = Path(path).expanduser().resolve()
 
-        if not file_path.exists():
-            raise ToolError(f"Path not found: {path}", tool_name="get_file_info")
+    if not file_path.exists():
+        raise ToolError(f"Path not found: {path}", tool_name="get_file_info")
 
-        stat = file_path.stat()
+    stat = file_path.stat()
 
-        info = {
-            "path": str(file_path),
-            "name": file_path.name,
-            "is_file": file_path.is_file(),
-            "is_dir": file_path.is_dir(),
-            "is_symlink": file_path.is_symlink(),
-            "size_bytes": stat.st_size,
-            "created": datetime.fromtimestamp(stat.st_ctime).isoformat(),
-            "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            "accessed": datetime.fromtimestamp(stat.st_atime).isoformat(),
-            "permissions": oct(stat.st_mode)[-3:],
-        }
+    info = {
+        "path": str(file_path),
+        "name": file_path.name,
+        "is_file": file_path.is_file(),
+        "is_dir": file_path.is_dir(),
+        "is_symlink": file_path.is_symlink(),
+        "size_bytes": stat.st_size,
+        "created": datetime.fromtimestamp(stat.st_ctime).isoformat(),
+        "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+        "accessed": datetime.fromtimestamp(stat.st_atime).isoformat(),
+        "permissions": oct(stat.st_mode)[-3:],
+    }
 
-        if file_path.is_file():
-            info["extension"] = file_path.suffix
+    if file_path.is_file():
+        info["extension"] = file_path.suffix
 
-        if file_path.is_dir():
-            try:
-                info["children_count"] = len(list(file_path.iterdir()))
-            except PermissionError:
-                info["children_count"] = None
+    if file_path.is_dir():
+        try:
+            info["children_count"] = len(list(file_path.iterdir()))
+        except PermissionError:
+            info["children_count"] = None
 
-        return info
-
-    except ToolError:
-        raise
-    except Exception as e:
-        raise ToolError(str(e), tool_name="get_file_info")
+    return info

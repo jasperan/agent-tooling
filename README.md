@@ -458,6 +458,7 @@ agent-tooling --chat --workspace docker                 # Sandboxed execution
 agent-tooling --list                    # List all tools
 agent-tooling --schemas                 # Show JSON schemas
 agent-tooling --arena                   # Compare tools side by side
+agent-tooling --run calculate --params '{"expression": "2 + 2"}'  # Run one tool
 
 # Integrations
 agent-tooling --bridge pidev            # Import pi-dev tools

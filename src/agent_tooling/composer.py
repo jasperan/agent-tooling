@@ -166,7 +166,11 @@ class CompositeTool(BaseTool):
         )
 
     def _execute_parallel(self, **kwargs) -> ToolResult:
-        """Execute all steps in parallel (simulated - actual parallel would use asyncio)."""
+        """Execute all steps and collect their results.
+
+        Steps currently run sequentially (true parallelism would use asyncio),
+        so the reported execution time is the sum of the individual step times.
+        """
         results = []
         total_time = 0.0
         all_success = True
@@ -187,7 +191,7 @@ class CompositeTool(BaseTool):
 
             # Execute
             result = tool.run(**params)
-            total_time = max(total_time, result.execution_time_ms)  # Parallel = max time
+            total_time += result.execution_time_ms
             results.append({
                 "step": step.tool_name,
                 "success": result.success,

@@ -5,13 +5,14 @@ This module transforms @tool decorated functions into a fully compliant
 MCP server that can be consumed by any MCP client (Claude, etc.).
 """
 
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional
 import json
 import asyncio
 from dataclasses import dataclass
 
+from agent_tooling import __version__
 from agent_tooling.tools.registry import ToolRegistry
-from agent_tooling.tools.base import BaseTool, ToolResult
+from agent_tooling.tools.base import BaseTool
 
 
 @dataclass
@@ -48,7 +49,7 @@ class MCPServer:
     def __init__(
         self,
         name: str = "agent-tooling",
-        version: str = "0.1.0",
+        version: str = __version__,
         description: str = "Tools from agent-tooling",
         tools: Optional[List[str]] = None,
     ):

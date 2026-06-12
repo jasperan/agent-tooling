@@ -501,6 +501,7 @@ def main():
     parser.add_argument("--chat", "-c", action="store_true", help="Start interactive chat with Ollama agent")
     parser.add_argument("--list", "-l", action="store_true", help="List all tools")
     parser.add_argument("--run", "-r", metavar="TOOL", help="Run a specific tool")
+    parser.add_argument("--params", metavar="JSON", help="JSON object of parameters for --run")
     parser.add_argument("--arena", "-a", action="store_true", help="Start arena mode")
     parser.add_argument("--dashboard", "-d", action="store_true", help="Start dashboard")
     parser.add_argument("--mcp", "-m", action="store_true", help="Start MCP server")
@@ -602,12 +603,26 @@ def main():
     elif args.run:
         print_banner()
         tool = ToolRegistry.get(args.run)
-        if tool:
-            console.print(f"[cyan]Running {args.run}...[/cyan]")
-            # Would need params from stdin or args
-            console.print("[yellow]Use interactive mode for tool execution with parameters.[/yellow]")
-        else:
+        if not tool:
             console.print(f"[red]Tool not found: {args.run}[/red]")
+        else:
+            try:
+                params = json.loads(args.params) if args.params else {}
+            except json.JSONDecodeError as e:
+                console.print(f"[red]Invalid --params JSON: {e}[/red]")
+                params = None
+
+            if params is not None:
+                console.print(f"[cyan]Running {args.run}...[/cyan]")
+                result = tool.run(**params)
+                if result.success:
+                    console.print(Panel(
+                        result.to_llm_response(),
+                        title="[green]Result[/green]",
+                        border_style="green",
+                    ))
+                else:
+                    console.print(f"[red]Error: {result.error}[/red]")
     elif args.arena:
         print_banner()
         arena_command()

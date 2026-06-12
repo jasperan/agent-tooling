@@ -44,11 +44,13 @@ class BaseAgent:
         logger: Optional[SessionLogger] = None,
         console: Optional[Console] = None,
         verbose: bool = True,
+        base_url: Optional[str] = None,
     ):
         self.model = model or os.environ.get("AGENT_MODEL", "ollama/qwen3-coder")
         self.workspace = workspace or LocalWorkspace()
         self.verbose = verbose
         self.console = console or Console()
+        self._ollama_base_url = base_url
 
         # Parse provider/model
         if "/" in self.model:
@@ -101,7 +103,10 @@ class BaseAgent:
         else:
             import anthropic
             if self._provider == "ollama":
-                base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+                base_url = (
+                    self._ollama_base_url
+                    or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+                )
                 self._client = anthropic.Anthropic(
                     api_key="ollama",
                     base_url=base_url,
