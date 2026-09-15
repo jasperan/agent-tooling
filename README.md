@@ -475,6 +475,55 @@ agent-tooling --demo-json               # Output as JSON
 
 ---
 
+## Terminal UI (Go)
+
+A second, optional front-end: a full-screen terminal UI built on
+[Bubble Tea v2](https://github.com/charmbracelet/bubbletea), for browsing the tool
+registry, reading schemas and running a single tool with a live transcript.
+
+It is an **additional** way to run the project, not a replacement. It implements
+no tool logic: the catalogue, schemas and every execution come from this project's
+own HTTP server, the provider catalogue and workspace facts come from the
+project's own Python, and a run is driven over the same server. A Go user and a
+Python user get identical results.
+
+```bash
+cd gotui && go build ./cmd/agent-tooling-tui
+
+# Full-screen UI (starts against http://127.0.0.1:8082)
+./agent-tooling-tui
+./agent-tooling-tui --start-service          # start the server first
+./agent-tooling-tui --start-service --port 9000
+
+# Scripted actions, no terminal required
+./agent-tooling-tui --list [--json]
+./agent-tooling-tui --schema read_file [--format openai|mcp|json]
+./agent-tooling-tui --run read_file --params '{"path":"README.md"}'
+./agent-tooling-tui --providers
+./agent-tooling-tui --sandbox [--json]
+./agent-tooling-tui --health
+```
+
+Screens: **Tools** (grouped by category, `/` to filter, `x` to run), **Schema**
+(parameters plus the generated OpenAI schema), **Run** (live transcript and
+result), **Providers** and **Sandbox**. `ACCESSIBLE=1` uses plain prompts for a
+screen reader. Requires Go 1.25+.
+
+Two notes worth knowing:
+
+- The **live WebSocket channel is optional**. This project declares
+  `uvicorn>=0.23.0` rather than `uvicorn[standard]`, so unless `websockets` or
+  `wsproto` is installed the server logs *"No supported WebSocket library
+  detected"* and refuses `/ws`. The TUI detects that and falls back to
+  `POST /tools/{name}/execute`, saying so in the transcript rather than pretending
+  the run was streamed. Install `uvicorn[standard]` for the live channel.
+- The **Sandbox** screen reports the execution workspace and which tools declare
+  `sandbox_required`, read from this project's own `ToolRegistry` and
+  `ToolingInterceptor`. Nothing is inferred: if the probe cannot run, the screen
+  says so instead of guessing.
+
+---
+
 ## Architecture
 
 ```
