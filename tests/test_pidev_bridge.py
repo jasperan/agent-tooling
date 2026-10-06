@@ -72,3 +72,50 @@ class TestPiDevBridge:
         """close() works fine when no RPC process is running."""
         bridge = PiDevBridge()
         bridge.close()  # Should not raise
+
+
+class TestRpcToolRegistration:
+    def test_imported_rpc_tool_forwards_arguments(self):
+        """Imported pi-dev tools expose inputSchema params and pass args through."""
+        import json
+        from agent_tooling.tools.registry import ToolRegistry
+
+        class FakeStdin:
+            def __init__(self):
+                self.written = []
+
+            def write(self, data):
+                self.written.append(data)
+
+            def flush(self):
+                pass
+
+        class FakeStdout:
+            def readline(self):
+                return json.dumps({"id": 1, "result": {"ok": True}}) + "\n"
+
+        class FakeProc:
+            stdin = FakeStdin()
+            stdout = FakeStdout()
+
+            def poll(self):
+                return None
+
+        bridge = PiDevBridge()
+        bridge._rpc_process = FakeProc()
+        bridge._register_rpc_tool({
+            "name": "echo_probe",
+            "description": "probe",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"text": {"type": "string", "description": "t"}},
+                "required": ["text"],
+            },
+        })
+        t = ToolRegistry.get("pidev_echo_probe")
+        assert [p.name for p in t.get_parameters()] == ["text"]
+        result = t.run(text="hi")
+        assert result.success
+        sent = json.loads(FakeProc.stdin.written[0])
+        assert sent["params"]["arguments"] == {"text": "hi"}
+        bridge._rpc_process = None

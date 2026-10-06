@@ -115,6 +115,7 @@ class PiDevBridge:
 
     def _register_rpc_tool(self, tool_info: Dict[str, Any]) -> None:
         """Wrap a pi-dev RPC tool as an agent-tooling tool."""
+        from agent_tooling.tools.base import ToolParameter
         from agent_tooling.tools.decorator import create_tool
 
         tool_name = f"pidev_{tool_info['name']}"
@@ -142,8 +143,24 @@ class PiDevBridge:
                 return json.loads(response_line).get("result", {})
             return {"error": "No response from pi-dev"}
 
+        schema = tool_info.get("inputSchema") or {}
+        required_names = set(schema.get("required", []))
+        parameters = [
+            ToolParameter(
+                name=pname,
+                type=pspec.get("type", "string") if isinstance(pspec, dict) else "string",
+                description=(pspec.get("description") if isinstance(pspec, dict) else None)
+                or f"The {pname} parameter",
+                required=pname in required_names,
+                default=pspec.get("default") if isinstance(pspec, dict) else None,
+                enum=pspec.get("enum") if isinstance(pspec, dict) else None,
+            )
+            for pname, pspec in (schema.get("properties") or {}).items()
+        ]
+
         create_tool(
             rpc_executor,
+            parameters=parameters,
             name=tool_name,
             description=description,
             category="pidev",

@@ -123,6 +123,8 @@ def _extract_parameters(func: Callable) -> List[ToolParameter]:
     for name, param in sig.parameters.items():
         if name in ("self", "cls"):
             continue
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
 
         # Get type
         python_type = type_hints.get(name, str)
@@ -165,6 +167,7 @@ class FunctionTool(BaseTool):
         mcp_enabled: bool = True,
         sandbox_required: bool = False,
         verbose: bool = False,
+        parameters: Optional[List[ToolParameter]] = None,
     ):
         super().__init__(verbose=verbose)
         self._func = func
@@ -173,7 +176,7 @@ class FunctionTool(BaseTool):
         self.category = category
         self.mcp_enabled = mcp_enabled
         self.sandbox_required = sandbox_required
-        self._parameters = _extract_parameters(func)
+        self._parameters = parameters if parameters is not None else _extract_parameters(func)
 
     def get_parameters(self) -> List[ToolParameter]:
         return self._parameters
@@ -319,6 +322,7 @@ def create_tool(
     mcp_enabled: bool = True,
     sandbox_required: bool = False,
     auto_register: bool = True,
+    parameters: Optional[List[ToolParameter]] = None,
 ) -> FunctionTool:
     """
     Create a tool from a function without using decorator syntax.
@@ -332,6 +336,7 @@ def create_tool(
         category=category,
         mcp_enabled=mcp_enabled,
         sandbox_required=sandbox_required,
+        parameters=parameters,
     )
 
     if auto_register:
