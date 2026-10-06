@@ -143,7 +143,7 @@ class MCPServer:
                 is_error=True,
             )
 
-    def handle_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Handle an incoming MCP message (synchronous).
 
@@ -151,11 +151,15 @@ class MCPServer:
             message: The MCP JSON-RPC message
 
         Returns:
-            The response message
+            The response message, or None for notifications (no "id"), which
+            per JSON-RPC must not be answered.
         """
         method = message.get("method", "")
         msg_id = message.get("id")
-        params = message.get("params", {})
+        params = message.get("params") or {}
+
+        if "id" not in message:
+            return None
 
         if method == "initialize":
             return {
@@ -232,8 +236,9 @@ class MCPServer:
 
                 message = json.loads(line.strip())
                 response = self.handle_message(message)
-                sys.stdout.write(json.dumps(response) + "\n")
-                sys.stdout.flush()
+                if response is not None:
+                    sys.stdout.write(json.dumps(response) + "\n")
+                    sys.stdout.flush()
 
             except json.JSONDecodeError:
                 continue
