@@ -99,7 +99,7 @@
 @tool(name="my_tool", category="custom", mcp_enabled=True)
 def my_tool(param: str) -> str:
     """One sentence on what the tool does."""
-    return f"Result: {param}"</pre>
+    return f"Result: {'{param}'}"</pre>
       </div>
     </div>
   </div>
