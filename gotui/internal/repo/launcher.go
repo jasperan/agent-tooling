@@ -2,8 +2,11 @@ package repo
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/jasperan/agent-tooling/gotui/internal/api"
@@ -73,6 +76,19 @@ func (l *Launcher) Start(ctx context.Context) error {
 			return err
 		}
 		l.port = port
+	}
+
+	// The server refuses execution without a bearer token. Generate one for the
+	// server this process owns; the child and this process's clients read it
+	// from the environment.
+	if os.Getenv(api.TokenEnv) == "" {
+		buf := make([]byte, 24)
+		if _, err := rand.Read(buf); err != nil {
+			return fmt.Errorf("generate API token: %w", err)
+		}
+		if err := os.Setenv(api.TokenEnv, hex.EncodeToString(buf)); err != nil {
+			return err
+		}
 	}
 
 	argv := append(Python(l.root), "-m", ServerModule, "--host", "127.0.0.1", "--port", fmt.Sprint(l.port))

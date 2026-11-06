@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -37,6 +38,9 @@ func New(baseURL string, timeout time.Duration) *Client {
 // DefaultTimeout bounds one request. Tool execution happens server-side and the
 // server has no deadline of its own, so the client must impose one or a hung
 // tool would freeze the UI.
+// TokenEnv names the variable holding the server's bearer token.
+const TokenEnv = "AGENT_TOOLING_API_TOKEN"
+
 const DefaultTimeout = 60 * time.Second
 
 // BaseURL reports the server this client is pointed at.
@@ -128,6 +132,9 @@ func (c *Client) get(ctx context.Context, path string, out any) error {
 }
 
 func (c *Client) do(req *http.Request, out any) error {
+	if tok := os.Getenv(TokenEnv); tok != "" && req.Header.Get("Authorization") == "" {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return err

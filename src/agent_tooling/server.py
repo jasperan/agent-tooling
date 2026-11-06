@@ -8,8 +8,13 @@ Provides:
 - WebSocket support for real-time agent sessions
 """
 
+import asyncio
+import hmac
+import os
+import re
+import secrets
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import json
@@ -66,13 +71,59 @@ app = FastAPI(
     version=__version__,
 )
 
-# Add CORS middleware
+# --- Access control -------------------------------------------------------
+# Tool execution runs host commands as the server user, so every execution
+# route (and the WebSocket session) requires a bearer token, and browsers may
+# only call the API from loopback origins unless the operator lists more.
+TOKEN_ENV = "AGENT_TOOLING_API_TOKEN"
+CORS_ORIGINS_ENV = "AGENT_TOOLING_CORS_ORIGINS"
+_LOOPBACK_ORIGIN = re.compile(r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$")
+
+
+def _extra_origins() -> List[str]:
+    raw = os.environ.get(CORS_ORIGINS_ENV, "")
+    return [o.strip() for o in raw.split(",") if o.strip() and o.strip() != "*"]
+
+
+def _origin_allowed(origin: Optional[str]) -> bool:
+    """Non-browser clients send no Origin; browsers must be loopback or listed."""
+    if origin is None:
+        return True
+    return bool(_LOOPBACK_ORIGIN.match(origin)) or origin in _extra_origins()
+
+
+def _token_valid(presented: Optional[str]) -> bool:
+    expected = os.environ.get(TOKEN_ENV, "")
+    if not expected or not presented:
+        return False
+    return hmac.compare_digest(presented.encode(), expected.encode())
+
+
+def _bearer(header: Optional[str]) -> Optional[str]:
+    if header and header[:7].lower() == "bearer ":
+        return header[7:].strip()
+    return None
+
+
+async def require_auth(request: Request) -> None:
+    """Reject execution requests that lack the configured bearer token."""
+    if not os.environ.get(TOKEN_ENV):
+        raise HTTPException(status_code=503, detail=f"{TOKEN_ENV} is not configured")
+    if not _token_valid(_bearer(request.headers.get("authorization"))):
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid bearer token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_extra_origins(),
+    allow_origin_regex=_LOOPBACK_ORIGIN.pattern,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Global interceptor
@@ -136,21 +187,22 @@ async def get_tool_schema(tool_name: str, format: str = "openai"):
         raise HTTPException(status_code=400, detail=f"Unknown format: {format}")
 
 
-@app.post("/tools/{tool_name}/execute", response_model=ToolCallResponse)
+@app.post("/tools/{tool_name}/execute", response_model=ToolCallResponse, dependencies=[Depends(require_auth)])
 async def execute_tool(tool_name: str, request: ToolCallRequest):
     """Execute a specific tool."""
-    result = interceptor.execute(tool_name, request.parameters)
+    # Tool bodies block (subprocess, network); keep them off the event loop.
+    result = await asyncio.to_thread(interceptor.execute, tool_name, request.parameters)
     return ToolCallResponse.from_result(result)
 
 
-@app.post("/execute", response_model=ToolCallResponse)
+@app.post("/execute", response_model=ToolCallResponse, dependencies=[Depends(require_auth)])
 async def execute(request: ToolCallRequest):
     """Execute a tool by name."""
-    result = interceptor.execute(request.name, request.parameters)
+    result = await asyncio.to_thread(interceptor.execute, request.name, request.parameters)
     return ToolCallResponse.from_result(result)
 
 
-@app.post("/function_call", response_model=ToolCallResponse)
+@app.post("/function_call", response_model=ToolCallResponse, dependencies=[Depends(require_auth)])
 async def function_call(request: FunctionCallRequest):
     """OpenAI-compatible function calling endpoint."""
     try:
@@ -158,10 +210,10 @@ async def function_call(request: FunctionCallRequest):
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON in arguments")
 
-    result = interceptor.execute_function_call({
-        "name": request.name,
-        "arguments": arguments,
-    })
+    result = await asyncio.to_thread(
+        interceptor.execute_function_call,
+        {"name": request.name, "arguments": arguments},
+    )
     return ToolCallResponse.from_result(result)
 
 
@@ -215,6 +267,13 @@ async def websocket_agent_session(websocket: WebSocket):
         Server sends: {"type": "done", "content": "final response"}
         Client sends: {"type": "close"} to end session
     """
+    # Browsers do not apply CORS to WebSockets, so check Origin and the token
+    # before accepting the upgrade.
+    presented = _bearer(websocket.headers.get("authorization")) or websocket.query_params.get("token")
+    if not _origin_allowed(websocket.headers.get("origin")) or not _token_valid(presented):
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
 
     try:
@@ -229,7 +288,8 @@ async def websocket_agent_session(websocket: WebSocket):
                 content = data.get("content", "")
 
                 if "tool_name" in data:
-                    result = interceptor.execute(
+                    result = await asyncio.to_thread(
+                        interceptor.execute,
                         data["tool_name"],
                         data.get("parameters", {}),
                     )
@@ -255,13 +315,17 @@ async def websocket_agent_session(websocket: WebSocket):
         pass
 
 
-def main(host: str = "0.0.0.0", port: int = 8082):
+def main(host: str = "127.0.0.1", port: int = 8082):
     """Run the server."""
     # Load built-in tools
     try:
         from agent_tooling.tools import developer, data, cognitive, media
     except ImportError:
         pass
+
+    if not os.environ.get(TOKEN_ENV):
+        os.environ[TOKEN_ENV] = secrets.token_urlsafe(32)
+        print(f"{TOKEN_ENV} not set; generated a one-time bearer token: {os.environ[TOKEN_ENV]}")
 
     print(f"Starting Agent Tooling Server on {host}:{port}")
     print(f"Tools loaded: {ToolRegistry.count()}")
@@ -272,7 +336,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Agent Tooling Server")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
+    parser.add_argument("--host", default="127.0.0.1", help="Host to bind to")
     parser.add_argument("--port", type=int, default=8082, help="Port to bind to")
 
     args = parser.parse_args()

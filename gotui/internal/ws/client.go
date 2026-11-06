@@ -10,7 +10,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -68,7 +70,7 @@ func Dial(ctx context.Context, baseURL string) (*Client, error) {
 	}
 
 	dialer := websocket.Dialer{HandshakeTimeout: DialTimeout}
-	conn, resp, err := dialer.DialContext(ctx, u, nil)
+	conn, resp, err := dialer.DialContext(ctx, u, authHeader())
 	if err != nil {
 		if resp != nil {
 			return nil, fmt.Errorf("websocket handshake to %s: HTTP %d: %w", u, resp.StatusCode, err)
@@ -76,6 +78,15 @@ func Dial(ctx context.Context, baseURL string) (*Client, error) {
 		return nil, fmt.Errorf("websocket handshake to %s: %w", u, err)
 	}
 	return &Client{conn: conn}, nil
+}
+
+// authHeader carries the server's bearer token, which the WebSocket route requires.
+func authHeader() http.Header {
+	h := http.Header{}
+	if tok := os.Getenv("AGENT_TOOLING_API_TOKEN"); tok != "" {
+		h.Set("Authorization", "Bearer "+tok)
+	}
+	return h
 }
 
 // sessionURL converts an HTTP base URL into the /ws endpoint.

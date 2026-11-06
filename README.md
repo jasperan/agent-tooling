@@ -206,7 +206,7 @@ $ agent-tooling --providers
 
 ### Sandboxed Execution via Docker
 
-Tools marked with `sandbox_required=True` run inside Docker containers, protecting the host system:
+Tools marked with `sandbox_required=True` are never run on the host by `DockerWorkspace`: the call is refused (fails closed) because tool bodies cannot yet be executed inside the container. Tools without the flag run in-process:
 
 ```python
 from agent_tooling import tool
@@ -233,7 +233,7 @@ The workspace abstraction provides three execution environments:
 | Workspace | Use Case | Isolation |
 |-----------|----------|-----------|
 | `LocalWorkspace` | Development, trusted tools | None (in-process) |
-| `DockerWorkspace` | Untrusted code, production | Full container isolation |
+| `DockerWorkspace` | Shell/file operations in a container | `run_command`/`read_file`/`write_file` only; `sandbox_required` tools are refused |
 | `RemoteWorkspace` | Distributed execution | Network-isolated via HTTP |
 
 ```python
@@ -392,8 +392,10 @@ schemas = ToolRegistry.to_openai_functions()
 ### HTTP Server + WebSocket
 
 ```bash
-# Start HTTP server on port 8082
-agent-tooling-server --port 8082
+# Start HTTP server on 127.0.0.1:8082. Execution routes and /ws require a bearer token:
+# set AGENT_TOOLING_API_TOKEN, or the server prints a generated one at startup.
+# Browser origins other than localhost must be listed in AGENT_TOOLING_CORS_ORIGINS (comma-separated).
+AGENT_TOOLING_API_TOKEN=change-me agent-tooling-server --port 8082
 ```
 
 REST API:
@@ -404,6 +406,7 @@ curl http://localhost:8082/tools
 
 # Execute a tool
 curl -X POST http://localhost:8082/execute \
+  -H "Authorization: Bearer $AGENT_TOOLING_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name": "calculate", "parameters": {"expression": "2 + 2"}}'
 
@@ -414,7 +417,8 @@ curl http://localhost:8082/schemas/openai
 WebSocket for real-time agent sessions:
 
 ```javascript
-const ws = new WebSocket("ws://localhost:8082/ws");
+const TOKEN = "..."; // your AGENT_TOOLING_API_TOKEN
+const ws = new WebSocket(`ws://localhost:8082/ws?token=${TOKEN}`);
 
 // Send a message
 ws.send(JSON.stringify({type: "message", content: "Hello"}));
