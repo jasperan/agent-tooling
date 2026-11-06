@@ -46,18 +46,24 @@ class DockerWorkspace(Workspace):
             self._oh_workspace = OHDockerWorkspace()
 
     def execute_tool(self, tool: BaseTool, **kwargs) -> ToolResult:
-        """Execute tool, routing sandbox-required tools through the container.
+        """Execute a tool; sandbox-required tools are refused, never run on the host.
 
-        Note: Full container-isolated execution requires openhands-workspace
-        to provide a serialization protocol. Currently sandbox-required tools
-        still run in-process after ensuring the container is available.
-        This will be upgraded when openhands-workspace adds execution support.
+        openhands-workspace offers no protocol for running an arbitrary tool body
+        inside the container, so a ``sandbox_required`` tool cannot be isolated
+        here. Running it in this process would silently drop the isolation the
+        flag promises, so the call fails closed. Tools that do not require a
+        sandbox run in-process as before.
         """
         if not tool.sandbox_required:
             return tool.run(**kwargs)
-        self._ensure_container()
-        # TODO: Serialize tool call and execute inside container via openhands
-        return tool.run(**kwargs)
+        return ToolResult(
+            success=False,
+            tool_name=tool.name,
+            error=(
+                f"Tool '{tool.name}' requires a sandbox, but DockerWorkspace cannot "
+                "run tool bodies inside the container; refusing to execute it on the host."
+            ),
+        )
 
     def run_command(self, command: str, timeout: int = 30) -> CommandResult:
         """Run command inside Docker container."""
